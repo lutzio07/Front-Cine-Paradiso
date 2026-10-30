@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Mi Perfil — Cine Paradiso{% endblock %}
+
+{% block content %}
+<div class="container perfil-container">
+    <h1 class="section-title">Mi Perfil</h1>
+
+    {% if error %}
+    <section class="perfil-section">
+        <p>No pudimos cargar tu perfil. Intentá de nuevo en unos minutos.</p>
+    </section>
+    {% else %}
+    <section class="perfil-section">
+        <h2>Mis Datos</h2>
+        <p><strong>Nombre:</strong> {{ usuario.nombre }}</p>
+        <p><strong>Email:</strong> {{ usuario.email }}</p>
+    </section>
+
+   <section class="perfil-section">
+    <h2>Mis Compras</h2>
+    {% if compras %}
+    <ul>
+        {% for compra in compras %}
+        <li>Compra #{{ compra.id_compra }} — {{ compra.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }} — ${{ compra.monto_total }} — {{ compra.estado_qr }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Todavía no hay compras en tu historial.</p>
+    {% endif %}
+</section>
+
+<section class="perfil-section">
+    <h2>Películas que ya vi</h2>
+    {% if peliculas_vistas %}
+    <ul>
+        {% for compra in peliculas_vistas %}
+        <li><strong>{{ compra.titulo_pelicula if compra.titulo_pelicula is defined else "Compra #" ~ compra.id_compra }}</strong> — {{ compra.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Todavía no hay películas en tu historial.</p>
+    {% endif %}
+</section>
+
+{% endif %}
+</div>
+{% endblock %}
