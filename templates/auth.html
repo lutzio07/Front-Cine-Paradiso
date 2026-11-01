@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Cine Paradiso - {% if modo == 'registro' %}Registro{% else %}Iniciar sesión{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card raised" style="max-width: 450px; margin: 40px auto;">
+    <h1 style="text-align: center; margin-bottom: 24px;">
+      Cine Paradiso - {% if modo == 'registro' %}Registro{% else %}Iniciar sesión{% endif %}
+    </h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="notice {% if category == 'success' %}success{% endif %}" role="alert" style="margin-bottom: 16px;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if modo == 'registro' %}
+      <form action="{{ url_for('auth.vista_registro') }}" method="POST" class="stack">
+        <div class="field">
+          <label for="nombre">Nombre completo</label>
+          <input id="nombre" name="nombre" type="text" class="input" maxlength="100" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" class="input" maxlength="100" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input id="password" name="password" type="password" class="input" minlength="6" required autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Crear cuenta</button>
+        <p style="text-align: center; margin-top: 16px;">
+          ¿Ya tenés cuenta?
+          <a href="{{ url_for('auth.vista_login') }}" class="accent">Iniciá sesión</a>
+        </p>
+      </form>
+    {% else %}
+      <form action="{{ url_for('auth.vista_login') }}" method="POST" class="stack">
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" class="input" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input id="password" name="password" type="password" class="input" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Ingresar</button>
+        <p style="text-align: center; margin-top: 16px;">
+          ¿No tenés cuenta?
+          <a href="{{ url_for('auth.vista_registro') }}" class="accent">Registrate acá</a>
+        </p>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input id="password" name="password" type="password" class="form-control"
+                               required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">Ingresar</button>
+                    <p class="text-center mt-3 mb-0">
+                        ¿No tenés cuenta?
+                        <a href="{{ url_for('auth.vista_registro') }}" class="text-info">Registrate acá</a>
+                    </p>
+                </form>
+            {% endif %}
+        </div>
+    </main>
+</body>
+</html>
