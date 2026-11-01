@@ -1,27 +1,66 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Cine Paradiso - Clásicos en Pantalla Grande{% endblock %}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    
-</head>
-<body>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#131313">
+  <meta name="description" content="Cine Paradiso: clásicos del cine, entradas y experiencias.">
+  <title>{% block title %}Cine Paradiso - Clásicos en Pantalla Grande{% endblock %}</title>
 
+  <!-- Google Fonts e Iconos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Material+Symbols+Outlined&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  {% block styles %}{% endblock %}
+</head>
+<body class="{% if section|default('public') == 'admin' %}admin-mode{% else %}public-mode{% endif %}">
+
+  {% if section|default('public') == 'admin' %}
+    <!-- ADMINISTRADOR -->
+    <aside class="admin-sidebar" aria-label="Navegación de administración">
+      <a class="brand admin-brand" href="{{ url_for('admin.dashboard') }}">
+        <span class="material-symbols-outlined">videocam</span>
+        <span>CINE PARADISO<small>BACKOFFICE</small></span>
+      </a>
+      <nav class="admin-nav" aria-label="Administración">
+        <a href="{{ url_for('admin.dashboard') }}" {% if active|default('') == 'dashboard' %}aria-current="page"{% endif %}><span class="material-symbols-outlined">analytics</span>Dashboard</a>
+        <a href="{{ url_for('admin.peliculas') }}" {% if active|default('') == 'peliculas' %}aria-current="page"{% endif %}><span class="material-symbols-outlined">theaters</span>Películas y funciones</a>
+        <a href="{{ url_for('admin.servicios') }}" {% if active|default('') == 'servicios' %}aria-current="page"{% endif %}><span class="material-symbols-outlined">room_service</span>ABM servicios</a>
+        <a href="{{ url_for('admin.validador') }}" {% if active|default('') == 'validador' %}aria-current="page"{% endif %}><span class="material-symbols-outlined">qr_code_scanner</span>Validar QR</a>
+      </nav>
+      <div class="admin-sidebar-bottom">
+        <a href="{{ url_for('main.index') }}"><span class="material-symbols-outlined">open_in_new</span>Ir al sitio cliente</a>
+        <span class="admin-status"><i></i> Panel administrador</span>
+      </div>
+    </aside>
+
+    <div class="admin-workspace">
+      <header class="admin-topbar">
+        <span>SISTEMA DE GESTIÓN OPERATIVA</span>
+        <span class="topbar-meta">
+          <span class="online-indicator">● En línea</span>
+          <span class="avatar" aria-hidden="true">A</span>
+        </span>
+      </header>
+  {% else %}
     <!-- NAVBAR -->
     {% include 'components/navbar.html' %}
+  {% endif %}
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+  <!-- CONTENIDO PRINCIPAL -->
+  <main id="contenido" class="page-content {% if section|default('public') == 'admin' %}admin-content{% endif %}">
+    {% block content %}{% endblock %}
+  </main>
 
-    <!-- FOOTER -->
+  <!-- FOOTER -->
+  {% if section|default('public') != 'admin' %}
     {% include 'components/footer.html' %}
+  {% else %}
+    </div> 
+  {% endif %}
 
+  {% block scripts %}{% endblock %}
 </body>
 </html>

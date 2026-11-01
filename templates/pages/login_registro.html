@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% set active = 'login' %}
+
+{% block title %}{% if modo == 'registro' %}Registrarme{% else %}Ingresar{% endif %} | Cine Paradiso{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="auth-layout">
+    <section class="auth-promo" aria-label="Bienvenida">
+      <span class="material-symbols-outlined">local_movies</span>
+      <div>
+        <span class="eyebrow">Bienvenido a Cine Paradiso</span>
+        <h1>Las mejores historias merecen ser compartidas.</h1>
+        <p>Tu próximo gran recuerdo comienza con una entrada.</p>
+      </div>
+    </section>
+
+    <section class="auth-panel" aria-label="Acceso a la cuenta">
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab" type="button" id="tab-login" role="tab" aria-selected="{% if modo == 'registro' %}false{% else %}true{% endif %}" aria-controls="form-login">Iniciar sesión</button>
+        <button class="auth-tab" type="button" id="tab-register" role="tab" aria-selected="{% if modo == 'registro' %}true{% else %}false{% endif %}" aria-controls="form-register">Crear cuenta</button>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="notice {% if category == 'success' %}success{% endif %}" role="alert" style="margin-bottom:16px">
+              {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% if error is defined and error %}
+        <div class="notice" role="alert" style="margin-bottom:16px">{{ error }}</div>
+      {% endif %}
+
+      <!-- Formulario Login -->
+      <form class="auth-form" id="form-login" method="post" action="{{ url_for('auth.vista_login') }}" role="tabpanel" aria-labelledby="tab-login" style="{% if modo == 'registro' %}display: none;{% else %}display: block;{% endif %}">
+        <div>
+          <span class="eyebrow">Qué bueno verte de nuevo</span>
+          <h2>Acceso a tu cuenta</h2>
+        </div>
+        <div class="field">
+          <label for="login-email">Correo electrónico</label>
+          <input class="input" type="email" id="login-email" name="email" autocomplete="email" placeholder="tu.correo@ejemplo.com" required>
+        </div>
+        <div class="field">
+          <label for="login-password">Contraseña</label>
+          <div class="input-row">
+            <input class="input" id="login-password" type="password" name="password" autocomplete="current-password" required>
+            <button class="btn btn-icon btn-quiet toggle-password" type="button" aria-label="Mostrar u ocultar contraseña">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" type="submit">
+          <span class="material-symbols-outlined">login</span>Ingresar a mi cuenta
+        </button>
+      </form>
+
+      <!-- Formulario Registro -->
+      <form class="auth-form" id="form-register" method="post" action="{{ url_for('auth.vista_registro') }}" role="tabpanel" aria-labelledby="tab-register" style="{% if modo == 'registro' %}display: block;{% else %}display: none;{% endif %}">
+        <div>
+          <span class="eyebrow">Tu primera función comienza acá</span>
+          <h2>Registro de espectador</h2>
+        </div>
+        <div class="field">
+          <label for="reg-name">Nombre completo</label>
+          <input class="input" type="text" id="reg-name" name="nombre" maxlength="100" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="reg-email">Correo electrónico</label>
+          <input class="input" type="email" id="reg-email" name="email" maxlength="100" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="reg-password">Contraseña</label>
+          <div class="input-row">
+            <input class="input" type="password" id="reg-password" name="password" minlength="6" autocomplete="new-password" required>
+            <button class="btn btn-icon btn-quiet toggle-password" type="button" aria-label="Mostrar u ocultar contraseña">
+              <span class="material-symbols-outlined">visibility</span>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="reg-confirm">Confirmar contraseña</label>
+          <input class="input" type="password" id="reg-confirm" name="password_confirm" minlength="6" autocomplete="new-password" required>
+        </div>
+        <p class="text-small">Tu cuenta se crea con rol CLIENTE.</p>
+        <button class="btn btn-primary btn-full" id="btn-registrar" type="submit">
+          <span class="material-symbols-outlined">person_add</span>Registrarme
+        </button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='js/login_registro.js') }}"></script>
+{% endblock %}
