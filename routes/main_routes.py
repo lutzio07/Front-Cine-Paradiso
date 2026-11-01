@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, session, redirect, url_for
 from services.api_client import (
     obtener_pelicula_por_id, 
     obtener_peliculas,
@@ -56,6 +56,8 @@ def pelicula_detalle(id_pelicula):
 
 @main_bp.route("/perfil")
 def perfil():
+    if not session.get("backend_session"):
+        return redirect(url_for("auth.vista_login"))
     usuario = {}
     compras = []
     error = False
