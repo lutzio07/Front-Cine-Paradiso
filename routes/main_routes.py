@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, session, redirect, url_for
 from services.api_client import (
     obtener_pelicula_por_id, 
     obtener_peliculas,
@@ -8,7 +8,7 @@ from services.api_client import (
 from services.cartelera_service import armar_cartelera
 from datetime import datetime
 from requests.exceptions import RequestException
-
+from services.perfil_service import obtener_perfil
 main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
@@ -62,6 +62,25 @@ def pelicula_detalle(id_pelicula):
         return render_template("pages/pelicula_detalle.html", pelicula=None, funciones=[], error=False), 404
     
     return render_template("pages/pelicula_detalle.html", pelicula=pelicula, funciones=funciones, sucursales=sucursales, error=False)
+
+@main_bp.route("/perfil")
+def perfil():
+    if not session.get("backend_session"):
+        return redirect(url_for("auth.vista_login"))
+    usuario = {}
+    compras = []
+    error = False
+    try:
+        datos = obtener_perfil()
+        usuario = datos["usuario"]
+        compras = datos["compras"]
+    except (RequestException, RuntimeError, ValueError, KeyError):
+        error = True
+
+    peliculas_vistas = [c for c in compras if c.get("estado_qr") == "USADO"]
+    status = 503 if error else 200
+    return render_template("pages/perfil.html", usuario=usuario, compras=compras,
+                           peliculas_vistas=peliculas_vistas, error=error), status
 
 @main_bp.app_template_filter("datetimeformat")
 def datetimeformat(value, formato="%d/%m/%Y %H:%M"):
