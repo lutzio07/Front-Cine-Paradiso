@@ -32,16 +32,14 @@ def post(endpoint, data=None, headers=None):
     return response.json()
 
 
-def obtener_peliculas(genero=None, sucursal=None, fecha=None, page=1):
+def obtener_peliculas(genero=None, titulo=None, id_sucursal=None):
     params = {}
     if genero:
         params["genero"] = genero
-    if sucursal:
-        params["sucursal"] = sucursal
-    if fecha:
-        params["fecha"] = fecha
-    params["page"] = page
-
+    if titulo:
+        params["titulo"] = titulo
+    if id_sucursal:
+        params["id_sucursal"] = id_sucursal
     response = get("/peliculas", params=params)
 
     if response.get("status") != "success":
@@ -64,19 +62,32 @@ def obtener_pelicula_por_id(id_pelicula):
 
     return response.get("data")
 
-def obtener_funciones(pelicula_id, sucursal=None, fecha=None):
+
+def obtener_funciones(id_pelicula=None, id_sucursal=None, fecha=None):
     params = {}
-    if sucursal:
-        params['sucursal'] = sucursal
+    if id_sucursal:
+        params['id_sucursal'] = id_sucursal
     if fecha:
         params['fecha'] = fecha
+    if id_pelicula:
+        params['id_pelicula'] = id_pelicula
 
-    response = get(f"/peliculas/{pelicula_id}/funciones", params=params)
+    response = get(f"/funciones", params=params)
     if response.get("status") != "success":
         raise RuntimeError(response.get("message", "No se pudieron obtener las funciones"))
 
     funciones = response.get("data")
     if not isinstance(funciones, list):
         raise ValueError("La respuesta del backend no contiene una lista de funciones")
-    return funciones    
+    return funciones
 
+
+def obtener_sucursales():
+    response = get("/sucursales")
+    if response.get("status") != "success":
+        raise RuntimeError(response.get("message", "No se pudieron obtener las sucursales"))
+
+    sucursales = response.get("data")
+    if not isinstance(sucursales, list):
+        raise ValueError("La respuesta del backend no contiene una lista de sucursales")
+    return sucursales
