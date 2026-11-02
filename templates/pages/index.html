@@ -25,9 +25,9 @@
         </div>
         <div class="field">
             <label for="sucursal-select">Sucursal: </label>
-            <select name="id_sucursal" id="sucursal_select" class="select">
+            <select name="id_sucursal" id="sucursal-select" class="select">
                 <option value="">-- Todas las sucursales --</option>
-                {% for s in sucursales_disponibles %}
+                {% for s in sucursales %}
                 <option value="{{ s.id_sucursal }}" {% if s.id_sucursal == request.args.get('id_sucursal')|int %}selected{% endif %}>{{ s.nombre }}</option>
                 {% endfor %}
             </select>
