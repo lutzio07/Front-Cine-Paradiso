@@ -49,7 +49,7 @@ def obtener_peliculas(genero=None, sucursal=None, fecha=None, page=1):
 
     peliculas = response.get("data", [])
 
-    if not isistance(peliculas, list):
+    if not isinstance(peliculas, list):
         raise ValueError("La respuesta del backend no contiene una lista de películas")
     return peliculas
 

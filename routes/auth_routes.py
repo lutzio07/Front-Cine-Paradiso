@@ -33,7 +33,7 @@ def vista_registro():
 
         try:
             respuesta = requests.post(
-                f"{current_app.config['BACKEND_URL']}/api/usuarios",
+                f"{current_app.config['BACKEND_URL']}/usuarios",
                 json=payload,
                 timeout=5,
             )
@@ -59,7 +59,7 @@ def vista_login():
 
         try:
             respuesta = requests.post(
-                f"{current_app.config['BACKEND_URL']}/api/sesiones",
+                f"{current_app.config['BACKEND_URL']}/sesiones",
                 json=payload,
                 timeout=5,
             )
@@ -102,7 +102,7 @@ def vista_logout():
     if cookie_backend:
         try:
             respuesta = requests.delete(
-                f"{current_app.config['BACKEND_URL']}/api/sesiones",
+                f"{current_app.config['BACKEND_URL']}/sesiones",
                 cookies={"session": cookie_backend},
                 timeout=5,
             )
