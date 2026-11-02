@@ -18,7 +18,7 @@
         <a href="{{ url_for('main.index') }}" class="btn btn-quiet">Volver a la cartelera</a>
     {% else %}
     <div class="detalle-header">
-        <img src="{{ pelicula.poster_url if pelicula.poster_url else 'https://via.placeholder.com/300x450' }}" alt="{{ pelicula.titulo }}" class="movie-poster">
+        <img src="{{ p.poster_url if p.poster_url else 'https://via.placeholder.com/300x450' }}" alt="{{ p.titulo }}" class="movie-poster">
 
         <div class="detalle-info">
             <h1 class="title-playfair">{{ pelicula.titulo }}</h1>

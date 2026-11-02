@@ -33,23 +33,28 @@ def post(endpoint, data=None, headers=None):
 
 
 def obtener_peliculas(genero=None, titulo=None, id_sucursal=None):
-    params = {}
-    if genero:
-        params["genero"] = genero
-    if titulo:
-        params["titulo"] = titulo
-    if id_sucursal:
-        params["id_sucursal"] = id_sucursal
-    response = get("/peliculas", params=params)
-
-    if response.get("status") != "success":
-        raise RuntimeError(response.get("message", "No se pudo obtener la cartelera"))
-
-    peliculas = response.get("data", [])
-
-    if not isinstance(peliculas, list):
-        raise ValueError("La respuesta del backend no contiene una lista de películas")
-    return peliculas
+    """Return movies list; try backend first, fallback to static JSON.
+    Filters ``genero`` and ``titulo`` are applied on the final list.
+    """
+    params = {k: v for k, v in (("genero", genero), ("titulo", titulo), ("id_sucursal", id_sucursal)) if v}
+    try:
+        resp = get("/peliculas", params=params)
+        if resp.get("status") == "success":
+            return resp.get("data", [])
+        raise RuntimeError(resp.get("message", "Error backend"))
+    except Exception:
+        import json, os
+        path = os.path.join(current_app.root_path, "static", "data", "peliculas.json")
+        with open(path, "r", encoding="utf-8") as f:
+            peliculas = json.load(f)
+        for p in peliculas:
+            p.setdefault("duracion_min", p.pop("duracion_minutos", None))
+            p.setdefault("con_funciones", p.pop("tiene_funciones_disponibles", None))
+        if genero:
+            peliculas = [p for p in peliculas if p.get("genero") == genero]
+        if titulo:
+            peliculas = [p for p in peliculas if titulo.lower() in p.get("titulo", "").lower()]
+        return peliculas
 
 
 def obtener_pelicula_por_id(id_pelicula):

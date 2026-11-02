@@ -1,0 +1,52 @@
+[
+  {
+    "id_pelicula": 1,
+    "titulo": "Inception",
+    "genero": "Ciencia Ficción",
+    "duracion_minutos": 148,
+    "clasificacion": "PG-13",
+    "sinopsis": "Un ladrón roba secretos a través del intercambio de sueños.",
+    "poster_url": "/static/img/Inception.jpg",
+    "tiene_funciones_disponibles": true
+  },
+  {
+    "id_pelicula": 2,
+    "titulo": "Interstellar",
+    "genero": "Ciencia Ficción",
+    "duracion_minutos": 169,
+    "clasificacion": "PG-13",
+    "sinopsis": "Un equipo de exploradores viaja a través de un agujero de gusano.",
+    "poster_url": "/static/img/Interstellar.jpg",
+    "tiene_funciones_disponibles": true
+  },
+  {
+    "id_pelicula": 3,
+    "titulo": "The Dark Knight",
+    "genero": "Acción",
+    "duracion_minutos": 152,
+    "clasificacion": "PG-13",
+    "sinopsis": "Batman enfrenta a un villano caótico que pone a prueba a la ciudad.",
+    "poster_url": "/static/img/TheDarkKnight.jpg",
+    "tiene_funciones_disponibles": true
+  },
+  {
+    "id_pelicula": 4,
+    "titulo":"Spider-Man: Across the Spider-Verse",
+    "genero":"Animación",
+    "duracion_minutos": 140,
+    "clasificacion": "APT",
+    "sinopsis": "Miles Morales es catapultado a través del Multiverso.",
+    "poster_url": "/static/img/SpiderManAcrossTheSpiderVerse.jpg",
+    "tiene_funciones_disponibles": false
+  },
+ {
+    "id_pelicula": 5,
+    "titulo":"TAvatar: The Way of Water",
+    "genero":"Aventura",
+    "duracion_minutos": 192,
+    "clasificacion": "PG-13",
+    "sinopsis": "Jake Sully vive con su familia en el planeta Pandora.",
+    "poster_url": "/static/img/AvatarTheWayOfWater.jpg",
+    "tiene_funciones_disponibles": false
+  }
+]
