@@ -11,18 +11,18 @@
 {% block content %}
 <section class="container detalle-pelicula">
     {% if error %}
-        <p class="mensaje-vacio">No pudimos conectar con el servidor.</p>
-        <a href="{{ url_for('main.index') }}" class="btn btn-outline">Volver a la cartelera</a>
+        <p class="empty-state">No pudimos conectar con el servidor.</p>
+        <a href="{{ url_for('main.index') }}" class="btn btn-quiet">Volver a la cartelera</a>
     {% elif not pelicula %}
-        <p class="mensaje-vacio">No encontramos la película que estás buscando.</p>
-        <a href="{{ url_for('main.index') }}" class="btn btn-outline">Volver a la cartelera</a>
+        <p class="empty-state">No encontramos la película que estás buscando.</p>
+        <a href="{{ url_for('main.index') }}" class="btn btn-quiet">Volver a la cartelera</a>
     {% else %}
     <div class="detalle-header">
         <img src="{{ pelicula.poster_url if pelicula.poster_url else 'https://via.placeholder.com/300x450' }}" alt="{{ pelicula.titulo }}" class="movie-poster">
 
         <div class="detalle-info">
             <h1 class="title-playfair">{{ pelicula.titulo }}</h1>
-            <div class="badges">
+            <div class="movie-meta">
                 <span class="badge badge-red">{{ pelicula.clasificacion }}</span>
                 <span class="badge">{{ pelicula.duracion_min }} min</span>
                 <span class="badge">{{ pelicula.genero }}</span>
@@ -31,11 +31,11 @@
         </div>
     </div>
 
-    <h2 class="section-title">Funciones</h2>
-    <form method="GET" action="{{ url_for('main.pelicula_detalle', id_pelicula=pelicula.id_pelicula) }}" class="genre-filter">
-    <div class="filter-group">
+    <h2 class="section-head">Funciones</h2>
+    <form method="GET" action="{{ url_for('main.pelicula_detalle', id_pelicula=pelicula.id_pelicula) }}" class="form-grid">
+    <div class="field">
         <label for="sucursal-select">Sucursal:</label>
-        <select name="id_sucursal" id="sucursal-select" class="form-control">
+        <select name="id_sucursal" id="sucursal-select" class="select">
             <option value="">-- Todas las sucursales --</option>
             {% for sucursal in sucursales %}
                <option {% if request.args.get('id_sucursal')|int == sucursal.id_sucursal %}selected{% endif %}>{{ sucursal.nombre }}</option>
@@ -43,14 +43,14 @@
         </select>
     </div>
 
-    <div class="filter-group">
+    <div class="field">
         <label for="fecha-input">Fecha:</label>
-        <input type="date" name="fecha" id="fecha-input" class="form-control" value="{{ request.args.get('fecha', '') }}">
+        <input type="date" name="fecha" id="fecha-input" class="input" value="{{ request.args.get('fecha', '') }}">
     </div>
 
-    <div class="filter-actions">
-        <button type="submit" class="btn btn-outline">Filtrar funciones</button>
-        <a href="{{ url_for('main.pelicula_detalle', id_pelicula=pelicula.id_pelicula) }}" class="btn btn-outline ">Limpiar</a>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Filtrar funciones</button>
+        <a href="{{ url_for('main.pelicula_detalle', id_pelicula=pelicula.id_pelicula) }}" class="btn btn-quiet">Limpiar</a>
     </div>
     </form>
 
@@ -68,7 +68,7 @@
             {% endfor %}
         </div>
     {% else %}
-    <p class="no-funciones">No hay funciones disponibles para los filtros seleccionados.</p>
+    <p class="empty-state">No hay funciones disponibles para los filtros seleccionados.</p>
     {% endif %}
     {% endif %}
 </section>
