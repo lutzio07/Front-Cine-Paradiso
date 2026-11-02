@@ -4,7 +4,7 @@
 {% if pelicula %}
     {{ pelicula.titulo }} - Cine Paradiso
 {% else %}
-    "Pelicula no encontrada" - Cine Paradiso
+    Película no encontrada - Cine Paradiso
 {% endif %}
 {% endblock %}
 
@@ -18,15 +18,13 @@
         <a href="{{ url_for('main.index') }}" class="btn btn-outline">Volver a la cartelera</a>
     {% else %}
     <div class="detalle-header">
-        <img src="{{ pelicula.url_poster }}"
-             alt="{{ pelicula.titulo }}"
-             class="poster-grande">
+        <img src="{{ pelicula.poster_url if pelicula.poster_url else 'https://via.placeholder.com/300x450' }}" alt="{{ pelicula.titulo }}" class="movie-poster">
 
         <div class="detalle-info">
             <h1 class="title-playfair">{{ pelicula.titulo }}</h1>
             <div class="badges">
                 <span class="badge badge-red">{{ pelicula.clasificacion }}</span>
-                <span class="badge">{{ pelicula.duracion_minutos }} min</span>
+                <span class="badge">{{ pelicula.duracion_min }} min</span>
                 <span class="badge">{{ pelicula.genero }}</span>
             </div>
             <p class="sinopsis-completa">{{ pelicula.sinopsis }}</p>
@@ -37,11 +35,11 @@
     <form method="GET" action="{{ url_for('main.pelicula_detalle', id_pelicula=pelicula.id_pelicula) }}" class="genre-filter">
     <div class="filter-group">
         <label for="sucursal-select">Sucursal:</label>
-        <select name="sucursal" id="sucursal-select" class="form-control">
+        <select name="id_sucursal" id="sucursal-select" class="form-control">
             <option value="">-- Todas las sucursales --</option>
-            <option value="1" {% if request.args.get('sucursal') == '1' %}selected{% endif %}>Sucursal 1</option>
-            <option value="2" {% if request.args.get('sucursal') == '2' %}selected{% endif %}>Sucursal 2</option>
-            <option value="3" {% if request.args.get('sucursal') == '3' %}selected{% endif %}>Sucursal 3</option>
+            {% for sucursal in sucursales %}
+               <option {% if request.args.get('id_sucursal')|int == sucursal.id_sucursal %}selected{% endif %}>{{ sucursal.nombre }}</option>
+            {% endfor %}
         </select>
     </div>
 
@@ -52,30 +50,26 @@
 
     <div class="filter-actions">
         <button type="submit" class="btn btn-outline">Filtrar funciones</button>
-        <a href="{{ url_for('main.pelicula_detalle', id_pelicula=pelicula.id_pelicula) }}" class="btn btn-outline btn-secondary">Limpiar</a>
+        <a href="{{ url_for('main.pelicula_detalle', id_pelicula=pelicula.id_pelicula) }}" class="btn btn-outline ">Limpiar</a>
     </div>
-</form>
+    </form>
 
     {% if funciones %}
         <div class="funciones-lista">
             {% for f in funciones %}
-                <div class="funcion-card {{ 'agotada' if not f.permite_compra or f.butacas_disponibles == 0 else '' }}">
-                    <p><strong>Sucursal:</strong> {{ f.sucursal }}</p>
+                <div class="funcion-card">
+                    <p><strong>Sucursal:</strong> {{ f.nombre_sucursal }}</p>
                     <p><strong>Horario:</strong> {{ f.fecha_hora|datetimeformat }}</p>
-                    <p><strong>Sala:</strong> {{ f.sala }}</p>
-                    <p><strong>Precio:</strong> ${{ f.precio_base }}</p>
+                    <p><strong>Sala:</strong> {{ f.nombre_sala }}</p>
+                    <p><strong>Precio:</strong> ${{ f.precio_entrada|int }}</p>
 
-                    {% if not f.permite_compra or f.butacas_disponibles == 0 %}
-                        <span class="badge badge-red">Agotada</span>
-                    {% endif %}
-
-                    <a href="/funciones/{{ f.id_funcion }}/butacas" class="btn btn-primary">{{ 'Seleccionar butacas' if f.permite_compra and f.butacas_disponibles > 0 else 'Ver detalle' }}</a>
+                    <a href="/funciones/{{ f.id_funcion }}/butacas" class="btn btn-primary">Seleccionar butacas</a>
                 </div>
-            {% endfor %}      
+            {% endfor %}
         </div>
     {% else %}
     <p class="no-funciones">No hay funciones disponibles para los filtros seleccionados.</p>
-    {% endif %}  
+    {% endif %}
     {% endif %}
 </section>
 {% endblock %}

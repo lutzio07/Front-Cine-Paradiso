@@ -25,11 +25,11 @@
         </div>
         <div class="filter-group">
             <label for="sucursal-select">Sucursal: </label>
-            <select name="sucursal" id="sucursal_select" class="form-control">
+            <select name="id_sucursal" id="sucursal_select" class="form-control">
                 <option value="">-- Todas las sucursales --</option>
-                <option value="1" {% if request.args.get('sucursal') == '1' %}selected{% endif %}>Sucursal 1</option>
-                <option value="2" {% if request.args.get('sucursal') == '2' %}selected{% endif %}>Sucursal 2</option>
-                <option value="3" {% if request.args.get('sucursal') == '3' %}selected{% endif %}>Sucursal 3</option>
+                {% for s in sucursales_disponibles %}
+                <option value="{{ s.id_sucursal }}" {% if s.id_sucursal == request.args.get('id_sucursal')|int %}selected{% endif %}>{{ s.nombre }}</option>
+                {% endfor %}
             </select>
         </div>
         <div class="filter-group">
@@ -46,36 +46,23 @@
     <div class="movie-grid">
         {% for p in peliculas %}
         <div class="movie-card">
-            <img src="{{ p.url_poster if p.url_poster else 'https://via.placeholder.com/300x450' }}" alt="{{ p.titulo }}" class="movie-poster">
+            <img src="{{ p.poster_url if p.poster_url else 'https://via.placeholder.com/300x450' }}" alt="{{ p.titulo }}" class="movie-poster">
             <div class="movie-body">
                 <h3 class="movie-title">{{ p.titulo }}</h3>
                 <div class="movie-meta">
                     <span class="badge badge-red">{{ p.clasificacion }}</span>
-                    <span class="badge">{{ p.duracion_minutos }} min</span>
+                    <span class="badge">{{ p.duracion_min }} min</span>
                     <span class="badge">{{ p.genero }}</span>
                 </div>
                 <p class="movie-sinopsis">{{ p.sinopsis }}</p>
-                {% if not p.tiene_funciones_disponibles %}
+                {% if not p.con_funciones %}
                     <div class="movie-aviso" role="alert">🕒 Sin funciones disponibles</div>
                 {% endif %}
-                <a href="{{ url_for('main.pelicula_detalle', id_pelicula=p.id_pelicula) }}" class="btn {{ 'btn-primary' if p.tiene_funciones_disponibles else 'btn-outline' }}">{{'Ver funciones y horarios' if p.tiene_funciones_disponibles else 'Ver ficha' }}</a>
+                <a href="{{ url_for('main.pelicula_detalle', id_pelicula=p.id_pelicula) }}" class="btn {{ 'btn-primary' if p.con_funciones else 'btn-outline' }}">{{'Ver funciones y horarios' if p.con_funciones else 'Ver ficha' }}</a>
             </div>
         </div>
         {% endfor %}
     </div>
-    <div class="pagination">
-            {% set page_num = request.args.get('page', 1)|int %}
-            
-            {% if page_num > 1 %}
-                <a href="{{ url_for('main.index', genero=request.args.get('genero'), sucursal=request.args.get('sucursal'), fecha=request.args.get('fecha'), page=page_num-1) }}" class="btn btn-outline">Anterior</a>
-            {% endif %}
-            
-            <span class="pagination-info">Página {{ page_num }}</span>
-            
-            {% if peliculas|length > 0 %}
-                <a href="{{ url_for('main.index', genero=request.args.get('genero'), sucursal=request.args.get('sucursal'), fecha=request.args.get('fecha'), page=page_num+1) }}" class="btn btn-outline">Siguiente</a>
-            {% endif %}
-        </div>
     {% elif error %}
     <p class="mensaje-vacio">No pudimos conectar con el servidor.</p>
     {% else %}
