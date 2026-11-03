@@ -32,6 +32,30 @@ def post(endpoint, data=None, headers=None):
     return response.json()
 
 
+def cancelar_compra(id_compra, cookie_backend):
+    try:
+        response = requests.patch(
+            f"{_backend_url()}/compras/{id_compra}",
+            json={"estado_qr": "CANCELADO"},
+            cookies={"session": cookie_backend},
+            timeout=5,
+        )
+        try:
+            datos = response.json()
+        except ValueError:
+            datos = {}
+        if not isinstance(datos, dict):
+            datos = {}
+
+        if response.status_code == 200 and datos.get("status") == "success":
+            return True, f"La compra #{id_compra} fue cancelada."
+        return False, datos.get(
+            "message", "No se pudo cancelar la compra. Revisá si sigue siendo elegible."
+        )
+    except requests.RequestException:
+        return False, "No se pudo conectar con el Backend para cancelar la compra."
+
+
 def obtener_peliculas(genero=None, titulo=None, id_sucursal=None):
     params = {}
     if genero:

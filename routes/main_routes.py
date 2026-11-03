@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, flash, render_template, request, session, redirect, url_for
 from services.api_client import (
+    cancelar_compra as solicitar_cancelacion_compra,
     obtener_pelicula_por_id, 
     obtener_peliculas,
     obtener_funciones,
@@ -81,6 +82,19 @@ def perfil():
     status = 503 if error else 200
     return render_template("pages/perfil.html", usuario=usuario, compras=compras,
                            peliculas_vistas=peliculas_vistas, error=error), status
+
+
+@main_bp.post("/mis-compras/<int:id_compra>/cancelar")
+def cancelar_compra_route(id_compra):
+    cookie_backend = session.get("backend_session")
+    if not cookie_backend:
+        flash("Iniciá sesión para cancelar una compra.", "danger")
+        return redirect(url_for("auth.vista_login"))
+
+    ok, mensaje = solicitar_cancelacion_compra(id_compra, cookie_backend)
+    flash(mensaje, "success" if ok else "danger")
+
+    return redirect(url_for("main.perfil"))
 
 @main_bp.app_template_filter("datetimeformat")
 def datetimeformat(value, formato="%d/%m/%Y %H:%M"):
