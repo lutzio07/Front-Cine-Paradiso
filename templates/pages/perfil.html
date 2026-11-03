@@ -2,14 +2,18 @@
 
 {% block title %}Mi Perfil — Cine Paradiso{% endblock %}
 
-{% set estados = {
-    "PENDIENTE": ("Vigente", "badge-green"),
-    "USADO": ("Finalizada", "badge-outline"),
-    "CANCELADO": ("Cancelada por usuario", "badge-red")
-} %}
-
 {% block content %}
 <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="notice {% if category == 'success' %}success{% endif %}" role="status" style="margin-bottom:16px">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
     {% if error %}
     <h1 class="section-title">Mi Perfil</h1>
     <section class="card soft">
@@ -31,22 +35,25 @@
     </section>
 
     <div class="stack">
-        {% set vigentes = compras|selectattr("estado_qr", "equalto", "PENDIENTE")|list %}
+        {% set vigentes = compras|selectattr("estado_compra", "equalto", "CONFIRMADA")|selectattr("estado_qr", "equalto", "PENDIENTE")|list %}
         {% if vigentes %}
-        {% set proxima = vigentes[0] %}
+        {% for proxima in vigentes %}
         <section class="card soft">
-            <p class="eyebrow">Próxima función activa</p>
-            <div class="card-header">
+            <p class="eyebrow">Compra vigente</p>
+            <div class="card-header profile-purchase-header">
                 <div>
                     <h2>Compra #{{ proxima.id_compra }}</h2>
                     <p>Realizada el {{ proxima.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }} · {{ proxima.monto_total|pesos }}</p>
                 </div>
-                <div class="flex gap-sm">
-                    <button class="btn btn-secondary" type="button">Cancelar entradas</button>
-                    <button class="btn btn-primary" type="button">Ver código QR</button>
+                <div class="flex gap-sm profile-purchase-actions">
+                    <form method="post" action="{{ url_for('main.cancelar_compra_route', id_compra=proxima.id_compra) }}" onsubmit="return confirm('¿Seguro que querés cancelar esta compra?')">
+                        <button class="btn btn-danger" type="submit">Cancelar entradas</button>
+                    </form>
+                    <button class="btn btn-primary" type="button" disabled>Ver código QR</button>
                 </div>
             </div>
         </section>
+        {% endfor %}
         {% endif %}
 
         <section class="card soft">
@@ -55,22 +62,36 @@
                 <span class="badge badge-outline">{{ compras|length }} registros</span>
             </div>
             {% if compras %}
-            <table class="data-table">
-                <thead>
-                    <tr><th>Compra</th><th>Fecha</th><th>Monto total</th><th>Estado</th></tr>
-                </thead>
-                <tbody>
-                    {% for compra in compras %}
-                    {% set etiqueta, clase = estados[compra.estado_qr] %}
-                    <tr>
-                        <td>#{{ compra.id_compra }}</td>
-                        <td>{{ compra.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }}</td>
-                        <td>{{ compra.monto_total|pesos }}</td>
-                        <td><span class="badge {{ clase }}">{{ etiqueta }}</span></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Compra</th><th>Fecha</th><th>Monto total</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for compra in compras %}
+                        {% if compra.estado_compra == "CANCELADA" or compra.estado_qr == "CANCELADO" %}
+                        {% set etiqueta, clase = ("Cancelada", "badge-red") %}
+                        {% elif compra.estado_compra == "EXPIRADA" %}
+                        {% set etiqueta, clase = ("Expirada", "badge-red") %}
+                        {% elif compra.estado_compra == "PENDIENTE" and not compra.estado_qr %}
+                        {% set etiqueta, clase = ("Pendiente de confirmación (sin QR)", "badge-outline") %}
+                        {% elif compra.estado_compra == "CONFIRMADA" and compra.estado_qr == "PENDIENTE" %}
+                        {% set etiqueta, clase = ("Vigente", "badge-green") %}
+                        {% elif compra.estado_qr == "USADO" %}
+                        {% set etiqueta, clase = ("Finalizada", "badge-outline") %}
+                        {% else %}
+                        {% set etiqueta, clase = ("Estado desconocido", "badge-outline") %}
+                        {% endif %}
+                        <tr>
+                            <td>#{{ compra.id_compra }}</td>
+                            <td>{{ compra.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }}</td>
+                            <td>{{ compra.monto_total|pesos }}</td>
+                            <td><span class="badge {{ clase }}">{{ etiqueta }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% else %}
             <p>Todavía no hay compras en tu historial.</p>
             {% endif %}
