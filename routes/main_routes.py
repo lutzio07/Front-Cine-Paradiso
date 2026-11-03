@@ -84,7 +84,7 @@ def perfil():
                            peliculas_vistas=peliculas_vistas, error=error), status
 
 
-@main_bp.post("/mis-compras/<int:id_compra>/cancelar")
+@main_bp.post("/mis-compras/<int:id_compra>/cancelacion")
 def cancelar_compra_route(id_compra):
     cookie_backend = session.get("backend_session")
     if not cookie_backend:
