@@ -2,45 +2,77 @@
 
 {% block title %}Mi Perfil — Cine Paradiso{% endblock %}
 
+{% set estados = {
+    "PENDIENTE": ("Vigente", "badge-green"),
+    "USADO": ("Finalizada", "badge-outline"),
+    "CANCELADO": ("Cancelada por usuario", "badge-red")
+} %}
+
 {% block content %}
 <div class="container">
-    <h1 class="section-title">Mi Perfil</h1>
-
     {% if error %}
+    <h1 class="section-title">Mi Perfil</h1>
     <section class="card soft">
         <p>No pudimos cargar tu perfil. Intentá de nuevo en unos minutos.</p>
     </section>
     {% else %}
+    
+    <section class="profile-banner">
+        <div class="profile-avatar">{{ usuario.nombre[0] | upper }}</div>
+        <div>
+            <h1>{{ usuario.nombre }}</h1>
+            <p>{{ usuario.email }}</p>
+            {% set n = peliculas_vistas|length %}
+            <span class="badge badge-outline">
+                <span class="material-symbols-outlined">movie</span>
+                {{ n }} {{ "función asistida" if n == 1 else "funciones asistidas" }}
+            </span>
+        </div>
+    </section>
+
     <div class="stack">
+        {% set vigentes = compras|selectattr("estado_qr", "equalto", "PENDIENTE")|list %}
+        {% if vigentes %}
+        {% set proxima = vigentes[0] %}
         <section class="card soft">
-            <h2>Mis Datos</h2>
-            <p><strong>Nombre:</strong> {{ usuario.nombre }}</p>
-            <p><strong>Email:</strong> {{ usuario.email }}</p>
+            <p class="eyebrow">Próxima función activa</p>
+            <div class="card-header">
+                <div>
+                    <h2>Compra #{{ proxima.id_compra }}</h2>
+                    <p>Realizada el {{ proxima.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }} · {{ proxima.monto_total|pesos }}</p>
+                </div>
+                <div class="flex gap-sm">
+                    <button class="btn btn-secondary" type="button">Cancelar entradas</button>
+                    <button class="btn btn-primary" type="button">Ver código QR</button>
+                </div>
+            </div>
         </section>
+        {% endif %}
 
         <section class="card soft">
-            <h2>Mis Compras</h2>
+            <div class="card-header">
+                <h2>Historial de compras</h2>
+                <span class="badge badge-outline">{{ compras|length }} registros</span>
+            </div>
             {% if compras %}
-            <ul>
-                {% for compra in compras %}
-                <li>Compra #{{ compra.id_compra }} — {{ compra.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }} — ${{ compra.monto_total }} — {{ compra.estado_qr }}</li>
-                {% endfor %}
-            </ul>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Compra</th><th>Fecha</th><th>Monto total</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    {% for compra in compras %}
+                    {% set etiqueta, clase = estados[compra.estado_qr] %}
+                    <tr>
+                        <td>#{{ compra.id_compra }}</td>
+                        <td>{{ compra.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }}</td>
+                        <td>{{ compra.monto_total|pesos }}</td>
+                        <td><span class="badge {{ clase }}">{{ etiqueta }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% else %}
             <p>Todavía no hay compras en tu historial.</p>
-            {% endif %}
-        </section>
-
-        <section class="card soft">
-            <h2>Películas que ya vi</h2>
-            {% if peliculas_vistas %}
-            <ul>
-                {% for compra in peliculas_vistas %}
-                <li><strong>{{ compra.titulo_pelicula if compra.titulo_pelicula is defined else "Compra #" ~ compra.id_compra }}</strong> — {{ compra.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }}</li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p>Todavía no hay películas en tu historial.</p>
             {% endif %}
         </section>
     </div>

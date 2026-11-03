@@ -89,3 +89,10 @@ def datetimeformat(value, formato="%d/%m/%Y %H:%M"):
         return fecha.strftime(formato)
     except (ValueError, TypeError):
         return value
+
+@main_bp.app_template_filter("pesos")
+def pesos(value):
+    try:
+        return "${:,.0f}".format(float(value)).replace(",", ".")
+    except (ValueError, TypeError):
+        return value
