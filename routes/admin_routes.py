@@ -13,60 +13,37 @@ from flask import (
 )
 
 
-admin_bp = Blueprint(
-    "admin",
-    __name__,
-    url_prefix="/admin"
-)
+admin_bp = Blueprint("admin",__name__,url_prefix="/admin")
 
 
 def es_admin():
-    usuario = (
-        session.get("usuario")
-        or session.get("user")
-        or session.get("user_info")
-    )
+    usuario = ( session.get("usuario") or session.get("user") or session.get("user_info") )
 
     if isinstance(usuario, dict):
-        rol = str(
-            usuario.get("rol")
-            or usuario.get("role")
-            or ""
-        ).lower()
+        rol = str( usuario.get("rol") or usuario.get("role") or "" ).lower()
 
         if rol:
             return rol in ("admin", "administrador")
 
-    rol = str(
-        session.get("rol")
-        or session.get("role")
-        or ""
-    ).lower()
+    rol = str( session.get("rol") or session.get("role") or "" ).lower()
 
     return rol in ("admin", "administrador")
 
 
 def backend_url():
-    base = (
-        current_app.config.get("BACKEND_URL")
-        or "http://localhost:5000/api"
-    ).rstrip("/")
+    base = (current_app.config.get("BACKEND_URL") or "http://localhost:5000/api").rstrip("/")
 
     return base if base.endswith("/api") else f"{base}/api"
 
 
 def get_auth_headers():
-    return {
-        "Content-Type": "application/json"
-    }
+    return { "Content-Type": "application/json" }
 
 
 def get_backend_cookies():
     cookie = session.get("backend_session")
 
-    return {
-        "session": cookie
-    } if cookie else {}
+    return { "session": cookie } if cookie else {}
 
 
 def extraer_error(respuesta, defecto):
@@ -74,11 +51,7 @@ def extraer_error(respuesta, defecto):
         cuerpo = respuesta.json()
 
         if isinstance(cuerpo, dict):
-            return (
-                cuerpo.get("message")
-                or cuerpo.get("mensaje")
-                or defecto
-            )
+            return ( cuerpo.get("message") or cuerpo.get("mensaje") or defecto )
 
     except ValueError:
         pass
@@ -88,12 +61,7 @@ def extraer_error(respuesta, defecto):
 
 def consultar_lista(url, recurso):
     try:
-        respuesta = requests.get(
-            url,
-            headers=get_auth_headers(),
-            cookies=get_backend_cookies(),
-            timeout=10,
-        )
+        respuesta = requests.get( url, headers=get_auth_headers(), cookies=get_backend_cookies(), timeout=10, )
 
         if not respuesta.ok:
             detalle = extraer_error(
@@ -128,56 +96,31 @@ def consultar_lista(url, recurso):
 
         return datos
 
-    except (requests.RequestException, ValueError) as error:
-        current_app.logger.warning(
-            "Fallo consultando %s: %s",
-            recurso,
-            error
-        )
+    except (requests.RequestException, ValueError) as error: current_app.logger.warning( "Fallo consultando %s: %s", recurso, error )
 
-        flash(
-            f"No se pudieron cargar {recurso}: "
-            "verificá la conexión con el backend.",
-            "error"
-        )
+        flash( f"No se pudieron cargar {recurso}: " "verificá la conexión con el backend.", "error" )
 
         return []
 
-@admin_bp.route(
-    "/peliculas",
-    methods=["GET"],
-    endpoint="peliculas"
-)
-@admin_bp.route(
-    "/cargar-pelicula",
-    methods=["GET"],
-    endpoint="admin_salas_funciones"
-)
-@admin_bp.route(
-    "/dashboard",
-    methods=["GET"],
-    endpoint="dashboard"
-)
+
+@admin_bp.route( "/peliculas", methods=["GET"], endpoint="peliculas" )
+@admin_bp.route( "/cargar-pelicula", methods=["GET"], endpoint="admin_salas_funciones" )
+@admin_bp.route( "/dashboard", methods=["GET"], endpoint="dashboard" )
 @admin_bp.route("/", methods=["GET"])
+
 def peliculas():
 
     if not es_admin():
-        flash(
-            "Acceso denegado. Se requieren permisos de administrador.",
-            "error"
-        )
+        flash( "Acceso denegado. Se requieren permisos de administrador.", "error")
 
         return redirect(url_for("auth.vista_login"))
 
     base = backend_url()
 
-
     sucursales = consultar_lista(
         f"{base}/sucursales",
         "sucursales"
     )
-
-
 
     salas = []
 
@@ -202,18 +145,15 @@ def peliculas():
                 sala["nombre_sucursal"] = sucursal.get("nombre")
                 salas.append(sala)
 
-
     peliculas_list = consultar_lista(
         f"{base}/peliculas",
         "películas"
     )
 
-
     funciones = consultar_lista(
         f"{base}/funciones",
         "funciones"
     )
-
 
     return render_template(
         "pages/admin_cargar_pelicula.html",
@@ -277,6 +217,7 @@ def validador():
         active="validador"
     )
 
+
 @admin_bp.route(
     "/salas",
     methods=["POST"],
@@ -292,7 +233,9 @@ def crear_sala():
 
         return redirect(url_for("auth.vista_login"))
 
-    if not get_backend_cookies():
+    cookies = get_backend_cookies()
+
+    if not cookies:
         flash(
             "Falta la sesión del backend. "
             "Iniciá sesión nuevamente.",
@@ -329,12 +272,7 @@ def crear_sala():
 
     try:
         respuesta = requests.post(
-            f"{backend_url()}/sucursales/{id_sucursal}/salas",
-            json=payload,
-            headers=get_auth_headers(),
-            cookies=get_backend_cookies(),
-            timeout=10,
-        )
+            f"{backend_url()}/sucursales/{id_sucursal}/salas", json=payload, headers=get_auth_headers(), cookies=cookies, timeout=10, )
 
     except requests.RequestException:
         flash(
@@ -360,6 +298,7 @@ def crear_sala():
 
     return redirect(url_for("admin.peliculas"))
 
+
 @admin_bp.route(
     "/funciones",
     methods=["POST"],
@@ -375,7 +314,9 @@ def crear_funcion():
 
         return redirect(url_for("auth.vista_login"))
 
-    if not get_backend_cookies():
+    cookies = get_backend_cookies()
+
+    if not cookies:
         flash(
             "Falta la sesión del backend. "
             "Iniciá sesión nuevamente.",
@@ -397,7 +338,6 @@ def crear_funcion():
             request.form.get("precio_entrada", "")
         )
 
-        # datetime-local no incluye zona horaria.
         fecha_local = datetime.fromisoformat(
             request.form.get("fecha_hora", "")
         )
@@ -436,7 +376,7 @@ def crear_funcion():
             f"{backend_url()}/funciones",
             json=payload,
             headers=get_auth_headers(),
-            cookies=get_backend_cookies(),
+            cookies=cookies,
             timeout=10,
         )
 
@@ -459,6 +399,168 @@ def crear_funcion():
         detalle = extraer_error(
             respuesta,
             "No se pudo programar la función."
+        )
+
+        flash(
+            f"Error {respuesta.status_code}: {detalle}",
+            "error"
+        )
+
+    return redirect(url_for("admin.peliculas"))
+
+
+@admin_bp.route(
+    "/salas/eliminar/<int:id_sucursal>/<int:id_sala>",
+    methods=["POST"],
+    endpoint="eliminar_sala"
+)
+def eliminar_sala(id_sucursal, id_sala):
+
+    if not es_admin():
+        flash(
+            "Acceso no autorizado.",
+            "error"
+        )
+
+        return redirect(url_for("auth.vista_login"))
+
+    cookies = get_backend_cookies()
+
+    if not cookies:
+        flash(
+            "Falta la sesión del backend. "
+            "Iniciá sesión nuevamente.",
+            "error"
+        )
+
+        return redirect(url_for("admin.peliculas"))
+
+    try:
+        respuesta = requests.delete(
+            f"{backend_url()}/sucursales/{id_sucursal}/salas/{id_sala}",
+            headers=get_auth_headers(),
+            cookies=cookies,
+            timeout=10,
+        )
+
+    except requests.RequestException:
+        flash(
+            "No se pudo conectar con el backend "
+            "para eliminar la sala.",
+            "error"
+        )
+
+        return redirect(url_for("admin.peliculas"))
+
+    if respuesta.status_code == 200:
+        flash(
+            "Sala eliminada correctamente.",
+            "success"
+        )
+
+    elif respuesta.status_code == 409:
+        detalle = extraer_error(
+            respuesta,
+            "No se puede eliminar la sala porque tiene funciones o recursos asociados."
+        )
+
+        flash(
+            f"No se pudo eliminar: {detalle}",
+            "error"
+        )
+
+    elif respuesta.status_code in (401, 403):
+        flash(
+            "Sesión expirada o sin permisos. "
+            "Iniciá sesión nuevamente.",
+            "error"
+        )
+
+    else:
+        detalle = extraer_error(
+            respuesta,
+            "No fue posible eliminar la sala."
+        )
+
+        flash(
+            f"Error {respuesta.status_code}: {detalle}",
+            "error"
+        )
+
+    return redirect(url_for("admin.peliculas"))
+
+
+@admin_bp.route(
+    "/funciones/eliminar/<int:id_funcion>",
+    methods=["POST"],
+    endpoint="eliminar_funcion"
+)
+def eliminar_funcion(id_funcion):
+
+    if not es_admin():
+        flash(
+            "Acceso no autorizado.",
+            "error"
+        )
+
+        return redirect(url_for("auth.vista_login"))
+
+    cookies = get_backend_cookies()
+
+    if not cookies:
+        flash(
+            "Falta la sesión del backend. "
+            "Iniciá sesión nuevamente.",
+            "error"
+        )
+
+        return redirect(url_for("admin.peliculas"))
+
+    try:
+        respuesta = requests.delete(
+            f"{backend_url()}/funciones/{id_funcion}",
+            headers=get_auth_headers(),
+            cookies=cookies,
+            timeout=10,
+        )
+
+    except requests.RequestException:
+        flash(
+            "No se pudo conectar con el backend "
+            "para eliminar la función.",
+            "error"
+        )
+
+        return redirect(url_for("admin.peliculas"))
+
+    if respuesta.status_code == 200:
+        flash(
+            "Función eliminada correctamente.",
+            "success"
+        )
+
+    elif respuesta.status_code == 409:
+        detalle = extraer_error(
+            respuesta,
+            "No se puede eliminar la función porque tiene entradas vendidas asociadas."
+        )
+
+        flash(
+            f"No se pudo eliminar: {detalle}",
+            "error"
+        )
+
+    elif respuesta.status_code in (401, 403):
+        flash(
+            "Sesión expirada o sin permisos. "
+            "Iniciá sesión nuevamente.",
+            "error"
+        )
+
+    else:
+        detalle = extraer_error(
+            respuesta,
+            "No fue posible eliminar la función."
         )
 
         flash(

@@ -17,8 +17,8 @@
 
     <section class="auth-panel" aria-label="Acceso a la cuenta">
       <div class="auth-tabs" role="tablist">
-        <button class="auth-tab" type="button" id="tab-login" role="tab" aria-selected="{% if modo == 'registro' %}false{% else %}true{% endif %}" aria-controls="form-login">Iniciar sesión</button>
-        <button class="auth-tab" type="button" id="tab-register" role="tab" aria-selected="{% if modo == 'registro' %}true{% else %}false{% endif %}" aria-controls="form-register">Crear cuenta</button>
+        <button class="auth-tab {% if modo != 'registro' %}active{% endif %}" type="button" id="tab-login" role="tab" aria-selected="{% if modo == 'registro' %}false{% else %}true{% endif %}" aria-controls="form-login">Iniciar sesión</button>
+        <button class="auth-tab {% if modo == 'registro' %}active{% endif %}" type="button" id="tab-register" role="tab" aria-selected="{% if modo == 'registro' %}true{% else %}false{% endif %}" aria-controls="form-register">Crear cuenta</button>
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -47,7 +47,7 @@
         </div>
         <div class="field">
           <label for="login-password">Contraseña</label>
-          <div class="input-row">
+          <div class="input-row password-wrapper">
             <input class="input" id="login-password" type="password" name="password" autocomplete="current-password" required>
             <button class="btn btn-icon btn-quiet toggle-password" type="button" aria-label="Mostrar u ocultar contraseña">
               <span class="material-symbols-outlined">visibility</span>
@@ -75,7 +75,7 @@
         </div>
         <div class="field">
           <label for="reg-password">Contraseña</label>
-          <div class="input-row">
+          <div class="input-row password-wrapper">
             <input class="input" type="password" id="reg-password" name="password" minlength="6" autocomplete="new-password" required>
             <button class="btn btn-icon btn-quiet toggle-password" type="button" aria-label="Mostrar u ocultar contraseña">
               <span class="material-symbols-outlined">visibility</span>

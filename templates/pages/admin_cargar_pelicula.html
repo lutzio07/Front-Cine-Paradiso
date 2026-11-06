@@ -11,516 +11,249 @@ Salas y Funciones | Backoffice Cine Paradiso
 <div class="page-heading">
     <div>
         <span class="eyebrow">Gestión de Backoffice</span>
-
         <h1>Programación de Salas y Funciones</h1>
-
-        <p>
-            Alta de salas por sucursal y configuración
-            de la cartelera del cine.
-        </p>
+        <p>Alta de salas por sucursal y configuración de la cartelera del cine.</p>
     </div>
 </div>
-
 
 {% with messages = get_flashed_messages(with_categories=true) %}
-
     {% if messages %}
-
         {% for category, message in messages %}
-
-            <div
-                class="notice {% if category == 'success' %}success{% endif %}"
-                role="status"
-                style="margin-bottom:18px"
-            >
+            <div class="notice {% if category == 'success' %}success{% endif %}" role="status" style="margin-bottom:18px">
                 {{ message }}
             </div>
-
         {% endfor %}
-
     {% endif %}
-
 {% endwith %}
 
-
+<!-- CONTENEDOR DE DOS COLUMNAS -->
 <div class="two-cols">
 
+    <!-- COLUMNA IZQUIERDA: FORMULARIOS -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
 
-    <section class="card">
+        <!-- A. CREAR NUEVA SALA -->
+        <section class="card">
+            <div class="card-header">
+                <h2>A. Crear Nueva Sala</h2>
+            </div>
 
+            <form action="{{ url_for('admin.crear_sala') }}" method="post" class="stack">
+                <div class="field">
+                    <label for="sala-sucursal">Sucursal</label>
+                    <select class="select" name="id_sucursal" id="sala-sucursal" required>
+                        <option value="">Seleccionar sucursal</option>
+                        {% for sucursal in sucursales|default([]) %}
+                            <option value="{{ sucursal.id_sucursal }}">{{ sucursal.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="sala-nombre">Nombre de la sala</label>
+                    <input class="input" id="sala-nombre" name="nombre" placeholder="Ej.: Sala 1 - 3D" maxlength="150" required>
+                </div>
+
+                <div class="field">
+                    <label for="sala-capacidad">Capacidad (Asientos)</label>
+                    <input class="input" id="sala-capacidad" type="number" name="capacidad" min="1" max="200" placeholder="Ej.: 60" required>
+                </div>
+
+                <button class="btn btn-primary btn-full" type="submit">
+                    <span class="material-symbols-outlined">add_box</span>
+                    Crear sala y generar asientos
+                </button>
+            </form>
+        </section>
+
+        <!-- B. PROGRAMAR FUNCIÓN -->
+        <section class="card">
+            <div class="card-header">
+                <h2>B. Programar Función</h2>
+            </div>
+
+            <form action="{{ url_for('admin.crear_funcion') }}" method="post" class="stack">
+                <div class="field">
+                    <label for="funcion-pelicula">Película</label>
+                    <select class="select" name="id_pelicula" id="funcion-pelicula" required>
+                        <option value="">Seleccionar película</option>
+                        {% for pelicula in peliculas|default([]) %}
+                            <option value="{{ pelicula.id_pelicula }}">
+                                {{ pelicula.titulo }}
+                                ({% if pelicula.duracion_min %}{{ pelicula.duracion_min }} min{% else %}Duración n/d{% endif %})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="funcion-sucursal">Sucursal</label>
+                    <select class="select" id="funcion-sucursal" required>
+                        <option value="">Seleccionar sucursal</option>
+                        {% for sucursal in sucursales|default([]) %}
+                            <option value="{{ sucursal.id_sucursal }}">{{ sucursal.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="funcion-sala">Sala</label>
+                    <select class="select" name="id_sala" id="funcion-sala" required>
+                        <option value="">Seleccionar sala</option>
+                        {% for sala in salas|default([]) %}
+                            <option value="{{ sala.id_sala }}" data-sucursal="{{ sala.id_sucursal }}">
+                                {{ sala.nombre }} · {{ sala.nombre_sucursal |default('Sucursal #' ~ sala.id_sucursal) }} ({{ sala.capacidad }} asientos)
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="funcion-fecha">Fecha y hora de inicio</label>
+                    <input class="input" type="datetime-local" name="fecha_hora" id="funcion-fecha" required>
+                </div>
+
+                <div class="field">
+                    <label for="funcion-precio">Precio de la entrada ($ ARS)</label>
+                    <input class="input" type="number" name="precio_entrada" id="funcion-precio" min="0" step="0.01" placeholder="Ej.: 4500" required>
+                </div>
+
+                <button class="btn btn-primary btn-full" type="submit">
+                    <span class="material-symbols-outlined">publish</span>
+                    Publicar función
+                </button>
+            </form>
+        </section>
+
+    </div>
+
+    <!-- COLUMNA DERECHA: SALAS CREADAS -->
+    <section class="card" style="height: fit-content;">
         <div class="card-header">
-            <h2>A. Crear Nueva Sala</h2>
-            <span class="badge badge-red">US-07</span>
+            <h2>Salas Creadas</h2>
+            <span class="badge badge-outline">{{ salas|default([])|length }} registros</span>
         </div>
 
-        <form
-            action="{{ url_for('admin.crear_sala') }}"
-            method="post"
-            class="stack"
-        >
-
-            <div class="field">
-
-                <label for="sala-sucursal">
-                    Sucursal
-                </label>
-
-                <select
-                    class="select"
-                    name="id_sucursal"
-                    id="sala-sucursal"
-                    required
-                >
-
-                    <option value="">
-                        Seleccionar sucursal
-                    </option>
-
-                    {% for sucursal in sucursales|default([]) %}
-
-                        <option value="{{ sucursal.id_sucursal }}">
-                            {{ sucursal.nombre }}
-                        </option>
-
-                    {% endfor %}
-
-                </select>
-
-            </div>
-
-
-            <div class="field">
-
-                <label for="sala-nombre">
-                    Nombre de la sala
-                </label>
-
-                <input
-                    class="input"
-                    id="sala-nombre"
-                    name="nombre"
-                    placeholder="Ej.: Sala 1 - 3D"
-                    maxlength="150"
-                    required
-                >
-
-            </div>
-
-
-            <div class="field">
-
-                <label for="sala-capacidad">
-                    Capacidad (Asientos)
-                </label>
-
-                <input
-                    class="input"
-                    id="sala-capacidad"
-                    type="number"
-                    name="capacidad"
-                    min="1"
-                    max="200"
-                    placeholder="Ej.: 60"
-                    required
-                >
-
-            </div>
-
-
-            <button
-                class="btn btn-primary btn-full"
-                type="submit"
-            >
-
-                <span class="material-symbols-outlined">
-                    add_box
-                </span>
-
-                Crear sala y generar asientos
-
-            </button>
-
-        </form>
-
-    </section>
-
-
-    <section class="card">
-
-        <div class="card-header">
-            <h2>B. Programar Función</h2>
-            <span class="badge badge-green">US-08</span>
-        </div>
-
-
-        <form
-            action="{{ url_for('admin.crear_funcion') }}"
-            method="post"
-            class="stack"
-        >
-
-
-            <!-- PELICULA -->
-
-            <div class="field">
-
-                <label for="funcion-pelicula">
-                    Película
-                </label>
-
-                <select
-                    class="select"
-                    name="id_pelicula"
-                    id="funcion-pelicula"
-                    required
-                >
-
-                    <option value="">
-                        Seleccionar película
-                    </option>
-
-                    {% for pelicula in peliculas|default([]) %}
-
-                        <option value="{{ pelicula.id_pelicula }}">
-
-                            {{ pelicula.titulo }}
-
-                            (
-                            {% if pelicula.duracion_min %}
-                                {{ pelicula.duracion_min }} min
-                            {% else %}
-                                Duración n/d
-                            {% endif %}
-                            )
-
-                        </option>
-
-                    {% endfor %}
-
-                </select>
-
-            </div>
-
-
-            <!-- SUCURSAL -->
-
-            <div class="field">
-
-                <label for="funcion-sucursal">
-                    Sucursal
-                </label>
-
-                <select
-                    class="select"
-                    id="funcion-sucursal"
-                    required
-                >
-
-                    <option value="">
-                        Seleccionar sucursal
-                    </option>
-
-                    {% for sucursal in sucursales|default([]) %}
-
-                        <option value="{{ sucursal.id_sucursal }}">
-                            {{ sucursal.nombre }}
-                        </option>
-
-                    {% endfor %}
-
-                </select>
-
-            </div>
-
-
-            <!-- SALA -->
-
-            <div class="field">
-
-                <label for="funcion-sala">
-                    Sala
-                </label>
-
-                <select
-                    class="select"
-                    name="id_sala"
-                    id="funcion-sala"
-                    required
-                >
-
-                    <option value="">
-                        Seleccionar sala
-                    </option>
-
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre de Sala</th>
+                        <th>Sucursal</th>
+                        <th>Capacidad</th>
+                        <th style="text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
                     {% for sala in salas|default([]) %}
-
-                        <option
-                            value="{{ sala.id_sala }}"
-                            data-sucursal="{{ sala.id_sucursal }}"
-                        >
-
-                            {{ sala.nombre }}
-
-                            ·
-
-                            {{
-                                sala.nombre_sucursal
-                                |default('Sucursal #' ~ sala.id_sucursal)
-                            }}
-
-                            ({{ sala.capacidad }} asientos)
-
-                        </option>
-
+                        <tr>
+                            <td><strong>#{{ sala.id_sala }}</strong></td>
+                            <td><strong>{{ sala.nombre }}</strong></td>
+                            <td>{{ sala.nombre_sucursal |default('Sucursal #' ~ sala.id_sucursal) }}</td>
+                            <td>{{ sala.capacidad }} asientos</td>
+                            <td style="text-align: center;">
+                                <form action="{{ url_for('admin.eliminar_sala', id_sucursal=sala.id_sucursal, id_sala=sala.id_sala) }}" 
+                                      method="POST" 
+                                      style="display: inline;" 
+                                      onsubmit="return confirm('¿Confirmas que deseas eliminar esta sala?');">
+                                    <button type="submit" 
+                                            class="btn btn-small" 
+                                            title="Eliminar sala"
+                                            style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center;">
+                                        <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="empty-state">No hay salas registradas.</td>
+                        </tr>
                     {% endfor %}
-
-                </select>
-
-            </div>
-
-
-            <!-- FECHA Y HORA -->
-
-            <div class="field">
-
-                <label for="funcion-fecha">
-                    Fecha y hora de inicio
-                </label>
-
-                <input
-                    class="input"
-                    type="datetime-local"
-                    name="fecha_hora"
-                    id="funcion-fecha"
-                    required
-                >
-
-            </div>
-
-
-            <!-- PRECIO -->
-
-            <div class="field">
-
-                <label for="funcion-precio">
-                    Precio de la entrada ($ ARS)
-                </label>
-
-                <input
-                    class="input"
-                    type="number"
-                    name="precio_entrada"
-                    id="funcion-precio"
-                    min="0"
-                    step="0.01"
-                    placeholder="Ej.: 4500"
-                    required
-                >
-
-            </div>
-
-
-            <!-- ENVIAR -->
-
-            <button
-                class="btn btn-primary btn-full"
-                type="submit"
-            >
-
-                <span class="material-symbols-outlined">
-                    publish
-                </span>
-
-                Publicar función
-
-            </button>
-
-        </form>
-
+                </tbody>
+            </table>
+        </div>
     </section>
 
 </div>
 
-
+<!-- SECCIÓN INFERIOR: FUNCIONES PROGRAMADAS -->
 <section class="card" style="margin-top:26px">
-
     <div class="card-header">
-
         <h2>Funciones Programadas</h2>
-
-        <span class="badge badge-outline">
-
-            {{ funciones|default([])|length }} registros
-
-        </span>
-
+        <span class="badge badge-outline">{{ funciones|default([])|length }} registros</span>
     </div>
 
-
     <div class="table-wrap">
-
         <table class="data-table">
-
             <thead>
-
                 <tr>
                     <th>ID</th>
                     <th>Película</th>
                     <th>Sala / Sucursal</th>
                     <th>Fecha y Hora</th>
                     <th>Precio</th>
+                    <th style="text-align: center;">Acciones</th>
                 </tr>
-
             </thead>
-
-
             <tbody>
-
                 {% for funcion in funciones|default([]) %}
-
                     <tr>
-
+                        <td><strong>#{{ funcion.id_funcion }}</strong></td>
+                        <td><strong>{{ funcion.titulo_pelicula |default('Película #' ~ funcion.id_pelicula) }}</strong></td>
                         <td>
-                            <strong>
-                                #{{ funcion.id_funcion }}
-                            </strong>
+                            {{ funcion.nombre_sala |default('Sala #' ~ funcion.id_sala) }} · {{ funcion.nombre_sucursal |default('Sucursal #' ~ funcion.id_sucursal) }}
                         </td>
-
-
+                        <td>{{ funcion.fecha_hora |replace('T', ' ') }}</td>
                         <td>
-                            <strong>
-
-                                {{
-                                    funcion.titulo_pelicula
-                                    |default(
-                                        'Película #' ~ funcion.id_pelicula
-                                    )
-                                }}
-
-                            </strong>
+                            <strong>{{ '$ {:,.0f}'.format(funcion.precio_entrada) |replace(',', '.') }}</strong>
                         </td>
-
-
-                        <td>
-
-                            {{
-                                funcion.nombre_sala
-                                |default(
-                                    'Sala #' ~ funcion.id_sala
-                                )
-                            }}
-
-                            ·
-
-                            {{
-                                funcion.nombre_sucursal
-                                |default(
-                                    'Sucursal #' ~ funcion.id_sucursal
-                                )
-                            }}
-
+                        <td style="text-align: center;">
+                            <form action="{{ url_for('admin.eliminar_funcion', id_funcion=funcion.id_funcion) }}" 
+                                  method="POST" 
+                                  style="display: inline;" 
+                                  onsubmit="return confirm('¿Confirmas que deseas eliminar esta función?');">
+                                <button type="submit" 
+                                        class="btn btn-small" 
+                                        title="Eliminar función"
+                                        style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                                </button>
+                            </form>
                         </td>
-
-
-                        <td>
-
-                            {{
-                                funcion.fecha_hora
-                                |replace('T', ' ')
-                            }}
-
-                        </td>
-
-
-                        <td>
-
-                            <strong>
-
-                                {{
-                                    '$ {:,.0f}'.format(
-                                        funcion.precio_entrada
-                                    )
-                                    |replace(',', '.')
-                                }}
-
-                            </strong>
-
-                        </td>
-
                     </tr>
-
-
                 {% else %}
-
                     <tr>
-
-                        <td colspan="5" class="empty-state">
-
-                            No hay funciones programadas
-                            en la cartelera.
-
-                        </td>
-
+                        <td colspan="6" class="empty-state">No hay funciones programadas en la cartelera.</td>
                     </tr>
-
                 {% endfor %}
-
             </tbody>
-
         </table>
-
     </div>
-
 </section>
 
 {% endblock %}
 
-
 {% block scripts %}
-
 <script>
-
-
-    const selectorSucursal = document.getElementById(
-        'funcion-sucursal'
-    );
-
-    const selectorSala = document.getElementById(
-        'funcion-sala'
-    );
-
+    const selectorSucursal = document.getElementById('funcion-sucursal');
+    const selectorSala = document.getElementById('funcion-sala');
 
     if (selectorSucursal && selectorSala) {
-
         function filtrarSalas() {
-
             const sucursalId = selectorSucursal.value;
-
             selectorSala.value = '';
 
             for (const opcion of selectorSala.options) {
-
-                const perteneceAOtraSucursal =
-                    Boolean(opcion.value) &&
-                    opcion.dataset.sucursal !== sucursalId;
-
+                const perteneceAOtraSucursal = Boolean(opcion.value) && opcion.dataset.sucursal !== sucursalId;
                 opcion.hidden = perteneceAOtraSucursal;
-
                 opcion.disabled = perteneceAOtraSucursal;
-
             }
-
         }
 
-        selectorSucursal.addEventListener(
-            'change',
-            filtrarSalas
-        );
-
+        selectorSucursal.addEventListener('change', filtrarSalas);
         filtrarSalas();
-
     }
-
 </script>
-
 {% endblock %}
