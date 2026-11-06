@@ -1,0 +1,53 @@
+<section class="card" style="margin-top:26px">
+    <div class="card-header">
+        <h2>Funciones Programadas</h2>
+        <span class="badge badge-outline">{{ funciones|default([])|length }} registros</span>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Película</th>
+                    <th>Sala / Sucursal</th>
+                    <th>Fecha y Hora</th>
+                    <th>Precio</th>
+                    <th style="text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for funcion in funciones|default([]) %}
+                    <tr>
+                        <td><strong>#{{ funcion.id_funcion }}</strong></td>
+                        <td><strong>{{ funcion.titulo_pelicula |default('Película #' ~ funcion.id_pelicula) }}</strong></td>
+                        <td>
+                            {{ funcion.nombre_sala |default('Sala #' ~ funcion.id_sala) }} · {{ funcion.nombre_sucursal |default('Sucursal #' ~ funcion.id_sucursal) }}
+                        </td>
+                        <td>{{ funcion.fecha_hora |replace('T', ' ') }}</td>
+                        <td>
+                            <strong>{{ '$ {:,.0f}'.format(funcion.precio_entrada) |replace(',', '.') }}</strong>
+                        </td>
+                        <td style="text-align: center;">
+                            <form action="{{ url_for('admin.eliminar_funcion', id_funcion=funcion.id_funcion) }}" 
+                                  method="POST" 
+                                  style="display: inline;" 
+                                  onsubmit="return confirm('¿Confirmas que deseas eliminar esta función?');">
+                                <button type="submit" 
+                                        class="btn btn-small" 
+                                        title="Eliminar función"
+                                        style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-state">No hay funciones programadas en la cartelera.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

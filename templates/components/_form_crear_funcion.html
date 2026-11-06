@@ -1,0 +1,57 @@
+<section class="card">
+    <div class="card-header">
+        <h2>B. Programar Función</h2>
+    </div>
+
+    <form action="{{ url_for('admin.crear_funcion') }}" method="post" class="stack">
+        <div class="field">
+            <label for="funcion-pelicula">Película</label>
+            <select class="select" name="id_pelicula" id="funcion-pelicula" required>
+                <option value="">Seleccionar película</option>
+                {% for pelicula in peliculas|default([]) %}
+                    <option value="{{ pelicula.id_pelicula }}">
+                        {{ pelicula.titulo }}
+                        ({% if pelicula.duracion_min %}{{ pelicula.duracion_min }} min{% else %}Duración n/d{% endif %})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="funcion-sucursal">Sucursal</label>
+            <select class="select" id="funcion-sucursal" required>
+                <option value="">Seleccionar sucursal</option>
+                {% for sucursal in sucursales|default([]) %}
+                    <option value="{{ sucursal.id_sucursal }}">{{ sucursal.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="funcion-sala">Sala</label>
+            <select class="select" name="id_sala" id="funcion-sala" required>
+                <option value="">Seleccionar sala</option>
+                {% for sala in salas|default([]) %}
+                    <option value="{{ sala.id_sala }}" data-sucursal="{{ sala.id_sucursal }}">
+                        {{ sala.nombre }} · {{ sala.nombre_sucursal |default('Sucursal #' ~ sala.id_sucursal) }} ({{ sala.capacidad }} asientos)
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="funcion-fecha">Fecha y hora de inicio</label>
+            <input class="input" type="datetime-local" name="fecha_hora" id="funcion-fecha" required>
+        </div>
+
+        <div class="field">
+            <label for="funcion-precio">Precio de la entrada ($ ARS)</label>
+            <input class="input" type="number" name="precio_entrada" id="funcion-precio" min="0" step="0.01" placeholder="Ej.: 4500" required>
+        </div>
+
+        <button class="btn btn-primary btn-full" type="submit">
+            <span class="material-symbols-outlined">publish</span>
+            Publicar función
+        </button>
+    </form>
+</section>

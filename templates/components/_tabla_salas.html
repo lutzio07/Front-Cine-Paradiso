@@ -1,0 +1,47 @@
+<section class="card" style="height: fit-content;">
+    <div class="card-header">
+        <h2>Salas Creadas</h2>
+        <span class="badge badge-outline">{{ salas|default([])|length }} registros</span>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre de Sala</th>
+                    <th>Sucursal</th>
+                    <th>Capacidad</th>
+                    <th style="text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sala in salas|default([]) %}
+                    <tr>
+                        <td><strong>#{{ sala.id_sala }}</strong></td>
+                        <td><strong>{{ sala.nombre }}</strong></td>
+                        <td>{{ sala.nombre_sucursal |default('Sucursal #' ~ sala.id_sucursal) }}</td>
+                        <td>{{ sala.capacidad }} asientos</td>
+                        <td style="text-align: center;">
+                            <form action="{{ url_for('admin.eliminar_sala', id_sucursal=sala.id_sucursal, id_sala=sala.id_sala) }}" 
+                                  method="POST" 
+                                  style="display: inline;" 
+                                  onsubmit="return confirm('Â¿Confirmas que deseas eliminar esta sala?');">
+                                <button type="submit" 
+                                        class="btn btn-small" 
+                                        title="Eliminar sala"
+                                        style="background-color: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-state">No hay salas registradas.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
