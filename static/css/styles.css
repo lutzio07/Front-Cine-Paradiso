@@ -180,6 +180,7 @@ input[type="checkbox"],input[type="radio"] { accent-color: var(--red); }
 .auth-form { display: grid; gap: 16px; }
 .auth-form[hidden] { display: none; }
 .profile-banner { display: flex; gap: 25px; align-items: center; padding: 28px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 15px; margin-bottom: 28px; }
+.profile-purchase-actions { flex-wrap: wrap; }
 .profile-avatar { width: 83px; height: 83px; border-radius: 50%; display: grid; place-items: center; background: #4c2225; color: #e18f93; font: 700 2rem Outfit,sans-serif; }
 .ticket-card { display: grid; grid-template-columns: 125px 1fr auto; gap: 19px; align-items: center; }
 .ticket-card .poster { height: 160px; aspect-ratio: auto; }
@@ -235,6 +236,7 @@ input[type="checkbox"],input[type="radio"] { accent-color: var(--red); }
   .ticket-card .poster { height: 125px; }
   .ticket-actions { grid-column: 1/-1; }
   .profile-banner { flex-wrap: wrap; }
+  .profile-purchase-header { align-items: flex-start; flex-direction: column; }
   .service-card { grid-template-columns: 51px 1fr; }
   .service-icon { width: 48px; height: 48px; }
   .service-control { grid-column: 2; justify-self: end; }
