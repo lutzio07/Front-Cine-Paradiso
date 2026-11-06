@@ -245,3 +245,37 @@ input[type="checkbox"],input[type="radio"] { accent-color: var(--red); }
   .admin-content { width: calc(100% - 28px); }
   .admin-topbar { font-size: .62rem; }
 }
+/* ojo dentro de la casilla de contraseña */
+.input-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-row > .input {
+  width: 100%;
+  padding-right: 44px; /* reserva espacio para que el texto escrito no se solape con el icono */
+}
+
+.input-row > .toggle-password {
+  position: absolute;
+  right: 6px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  box-shadow: none;
+}
+
+.input-row > .toggle-password:hover {
+  background: transparent;
+  color: var(--text);
+}
+/* separacion superior para el boton de iniciar sesion */
+#form-login button[type="submit"] {
+  margin-top: 10px;
+}
