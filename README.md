@@ -75,12 +75,45 @@ Este sistema de venta de entradas está compuesto por dos repositorios complemen
 ## 3. Estructura
 ```text
 Front Cine-Paradiso/
+├── routes/
+│   ├── admin_routes.py
+│   ├── auth_routes.py
+│   └── main_routes.py
+├── services/
+│   ├── __init__.py
+│   ├── admin_service.py
+│   ├── api_client.py
+│   ├── auth_service.py
+│   ├── cartelera_service.py
+│   └── perfil_service.py
 ├── static/
-│   └── css/styles.css
+│   ├── css/
+│   │   └── styles.css
+│   └── js/
+│       └── login_registro.js
 ├── templates/
+│   ├── components/
+│   │   ├── _form_crear_funcion.html
+│   │   ├── _form_crear_sala.html
+│   │   ├── _tabla_funciones.html
+│   │   ├── _tabla_salas.html
+│   │   ├── footer.html
+│   │   └── navbar.html
+│   ├── pages/
+│   │   ├── 404.html
+│   │   ├── admin_cargar_pelicula.html
+│   │   ├── index.html
+│   │   ├── login_registro.html
+│   │   ├── pelicula_detalle.html
+│   │   └── perfil.html
+│   ├── auth.html
 │   ├── base.html
 │   └── index.html
+├── .env.example
+├── .gitignore
+├── README.md
 ├── app.py
+├── config.py
 ├── endpoints.md
 ├── init.sh
 └── requirements.txt
