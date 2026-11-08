@@ -198,34 +198,24 @@ def dashboard():
 @admin_bp.get("/estadisticas/reporte-pdf")
 def reporte_pdf():
     if not es_admin():
-        resultado = (
-            jsonify(
-                error="Sesión expirada o sin permisos. Iniciá sesión nuevamente."
-            ),
-            403
-        )
+        flash("Sesión expirada o sin permisos. Iniciá sesión nuevamente.", "error")
+        return redirect(url_for("auth.vista_login"))
 
-    else:
-        contenido, error, estado = obtener_pdf()
+    contenido, error, estado = obtener_pdf()
 
-        if error:
-            resultado = (
-                jsonify(error=error),
-                estado
+    if error:
+        flash(error, "error")
+        return redirect(url_for("admin.dashboard"))
+
+    return Response(
+        contenido,
+        mimetype="application/pdf",
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="reporte-cine-paradiso.pdf"'
             )
-
-        else:
-            resultado = Response(
-                contenido,
-                mimetype="application/pdf",
-                headers={
-                    "Content-Disposition": (
-                        'attachment; filename="reporte-cine-paradiso.pdf"'
-                    )
-                }
-            )
-
-    return resultado
+        }
+    )
 
 
 @admin_bp.route("/servicios", methods=["GET"], endpoint="servicios")
