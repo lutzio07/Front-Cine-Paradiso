@@ -141,9 +141,8 @@
 </section>
 
 <div class="dashboard-section">
-    <button class="btn btn-primary" type="button" id="descargar-reporte" data-url="{{ url_for('admin.reporte_pdf') }}">Descargar reporte PDF</button>
+    <a class="btn btn-primary" href="{{ url_for('admin.reporte_pdf') }}">Descargar reporte PDF</a>
 </div>
-<div id="dashboard-notificaciones" class="dashboard-notificaciones" aria-live="assertive"></div>
 {% endblock %}
 {% block scripts %}
 <script defer src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
