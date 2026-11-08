@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 from flask import (
     Blueprint,
     Response,
-    jsonify,
     flash,
     redirect,
     render_template,
