@@ -49,7 +49,7 @@
                     <form method="post" action="{{ url_for('main.cancelar_compra_route', id_compra=proxima.id_compra) }}" onsubmit="return confirm('¿Seguro que querés cancelar esta compra?')">
                         <button class="btn btn-danger" type="submit">Cancelar entradas</button>
                     </form>
-                    <button class="btn btn-primary" type="button" disabled>Ver código QR</button>
+                    <a class="btn btn-primary" href="{{ url_for('main.detalle_compra', id_compra=proxima.id_compra) }}">Ver código QR</a>
                 </div>
             </div>
         </section>
