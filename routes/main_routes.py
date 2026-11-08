@@ -10,6 +10,8 @@ from services.cartelera_service import armar_cartelera
 from datetime import datetime
 from requests.exceptions import RequestException
 from services.perfil_service import obtener_perfil
+from services.compras_service import obtener_detalle_compra
+from services.qr_service import generar_qr_data_url
 main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
@@ -95,6 +97,35 @@ def cancelar_compra_route(id_compra):
     flash(mensaje, "success" if ok else "danger")
 
     return redirect(url_for("main.perfil"))
+
+@main_bp.get("/mis-compras/<int:id_compra>")
+def detalle_compra(id_compra):
+    if not session.get("backend_session"):
+        return redirect(url_for("auth.vista_login"))
+
+    try:
+        detalle = obtener_detalle_compra(id_compra)
+    except (RequestException, RuntimeError, ValueError, KeyError):
+        flash("No pudimos cargar la compra. Intentá de nuevo.", "danger")
+        return redirect(url_for("main.perfil"))
+
+    if detalle is None:
+        flash("La compra no existe.", "danger")
+        return redirect(url_for("main.perfil"))
+
+    compra = detalle["compra"]
+    qr = None
+    # Solo se muestra el QR si la compra sigue pendiente de uso.
+    if compra.get("codigo_qr") and compra.get("estado_qr") == "PENDIENTE":
+        qr = generar_qr_data_url(compra["codigo_qr"])
+
+    return render_template(
+        "pages/compra_detalle.html",
+        compra=compra,
+        entradas=detalle["entradas"],
+        servicios=detalle["servicios"],
+        qr=qr,
+    )
 
 @main_bp.app_template_filter("datetimeformat")
 def datetimeformat(value, formato="%d/%m/%Y %H:%M"):

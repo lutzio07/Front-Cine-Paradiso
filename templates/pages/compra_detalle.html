@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Compra #{{ compra.id_compra }} — Cine Paradiso{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="section-head">
+        <h1 class="section-title">Compra #{{ compra.id_compra }}</h1>
+        <a class="btn btn-quiet" href="{{ url_for('main.perfil') }}">Volver al perfil</a>
+    </div>
+
+    <div class="stack">
+        <section class="card raised" style="text-align:center">
+            <h2>Tu código QR</h2>
+            {% if qr %}
+            <p class="muted">Presentalo en la puerta de la sala para ingresar.</p>
+            <img src="{{ qr }}" alt="Código QR de la compra #{{ compra.id_compra }}"
+                 width="240" height="240"
+                 style="display:block;margin:16px auto;background:#fff;padding:14px;border-radius:12px">
+            <p class="muted">Código: {{ compra.codigo_qr }}</p>
+            {% elif compra.estado_qr == "USADO" %}
+            <p class="muted">Este código ya fue usado para ingresar.</p>
+            {% elif compra.estado_compra == "CANCELADA" or compra.estado_qr == "CANCELADO" %}
+            <p class="muted">La compra fue cancelada y el código ya no es válido.</p>
+            {% elif compra.estado_compra == "EXPIRADA" %}
+            <p class="muted">La reserva expiró antes de confirmarse, por eso esta compra no tiene código.</p>
+            {% elif compra.estado_compra == "PENDIENTE" %}
+            <p class="muted">La compra todavía no fue confirmada. El código se genera al confirmarla.</p>
+            {% else %}
+            <p class="muted">El código no está disponible para esta compra.</p>
+            {% endif %}
+        </section>
+
+        <section class="card soft">
+            <div class="card-header">
+                <h2>Detalle</h2>
+                <span class="badge badge-outline">{{ compra.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }}</span>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Entrada</th><th>Butaca</th><th>Precio</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for entrada in entradas %}
+                        <tr>
+                            <td>Función #{{ entrada.id_funcion }}</td>
+                            <td>{{ entrada.fila }}{{ entrada.numero }}</td>
+                            <td>{{ entrada.precio|pesos }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3">Esta compra ya no tiene entradas.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if servicios %}
+            <h3 style="margin-top:20px">Servicios</h3>
+            <ul>
+                {% for servicio in servicios %}
+                <li>{{ servicio.nombre_servicio }} x{{ servicio.cantidad }} · {{ servicio.precio_unitario|pesos }} c/u</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            <p style="margin-top:16px"><strong>Total: {{ compra.monto_total|pesos }}</strong></p>
+        </section>
+    </div>
+</div>
+{% endblock %}
