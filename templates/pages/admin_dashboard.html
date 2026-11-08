@@ -27,6 +27,12 @@
     <span class="badge badge-green"><span class="material-symbols-outlined">verified_user</span> ADMIN</span>
 </div>
 
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% for categoria, mensaje in mensajes %}
+    <div class="dashboard-aviso" role="alert">{{ mensaje }}</div>
+  {% endfor %}
+{% endwith %}
+
 <section class="four-cols" aria-label="Indicadores principales">
     {{ tarjeta('Funciones informadas', ocupacion|length if ocupacion is not none else '—', 'Según filtros de ocupación', error_ocupacion) }}
     {{ tarjeta('Entradas vendidas', ocupacion|sum(attribute='entradas_vendidas') if ocupacion is not none else '—', 'Según filtros de ocupación') }}
