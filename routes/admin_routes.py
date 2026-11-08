@@ -2,6 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 from flask import (
     Blueprint,
+    Response,
+    jsonify,
     flash,
     redirect,
     render_template,
@@ -17,6 +19,8 @@ from services.admin_service import (
     obtener_datos_backoffice_peliculas,
     obtener_servicios,
 )
+
+from services.estadisticas_service import consultar_estadistica, obtener_estadistica, obtener_pdf
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -37,7 +41,6 @@ def es_admin():
 
 @admin_bp.route("/peliculas", methods=["GET"], endpoint="peliculas")
 @admin_bp.route("/cargar-pelicula", methods=["GET"], endpoint="admin_salas_funciones")
-@admin_bp.route("/dashboard", methods=["GET"], endpoint="dashboard")
 @admin_bp.route("/", methods=["GET"])
 def peliculas():
 
@@ -58,6 +61,50 @@ def peliculas():
         peliculas=peliculas_list,
         funciones=funciones,
     )
+
+
+@admin_bp.get("/dashboard")
+def dashboard():
+    if not es_admin():
+        flash("Acceso denegado. Se requieren permisos de administrador.", "error")
+        resultado = redirect(url_for("auth.vista_login"))
+    else:
+        filtros, errores_filtros = {}, []
+        for nombre in ("id_pelicula", "id_funcion"):
+            valores = request.args.getlist(nombre)
+            valor = valores[0].strip() if valores else ""
+            if len(valores) > 1 or (valor and (not valor.isascii() or not valor.isdecimal() or int(valor) <= 0)):
+                errores_filtros.append(nombre)
+            elif valor:
+                filtros[nombre] = int(valor)
+        if errores_filtros:
+            ocupacion, error_ocupacion = None, "Los filtros deben ser enteros positivos. Revisá los valores ingresados."
+        else:
+            ocupacion, error_ocupacion = obtener_estadistica(
+                "estadisticas/ocupacion", {"id_funcion": "numero", "titulo_pelicula": "texto", "nombre_sala": "texto", "fecha_hora": "texto", "capacidad": "numero", "entradas_vendidas": "numero", "porcentaje_ocupacion": "numero"}, filtros)
+        ventas, error_ventas = obtener_estadistica("estadisticas/ventas-por-genero", {"genero": "texto", "total_ventas": "numero"})
+        franjas, error_franjas = obtener_estadistica("estadisticas/franjas-horarias", {"hora": "texto", "entradas_vendidas": "numero"})
+        cancelaciones, error_cancelaciones = obtener_estadistica("estadisticas/cancelaciones", {"total_cancelaciones": "numero"}, lista=False)
+        peliculas_lista, error_peliculas = consultar_estadistica("peliculas")
+        funciones_lista, error_funciones = consultar_estadistica("funciones")
+        resultado = render_template("pages/admin_dashboard.html", ocupacion=ocupacion, error_ocupacion=error_ocupacion,
+            ventas_por_genero=ventas, error_ventas=error_ventas, franjas=franjas, error_franjas=error_franjas,
+            cancelaciones=cancelaciones, error_cancelaciones=error_cancelaciones, peliculas=peliculas_lista or [],
+            funciones=funciones_lista or [], error_peliculas=error_peliculas, error_funciones=error_funciones, filtros=filtros)
+    return resultado
+
+
+@admin_bp.get("/estadisticas/reporte-pdf")
+def reporte_pdf():
+    if not es_admin():
+        resultado = (jsonify(error="Sesión expirada o sin permisos. Iniciá sesión nuevamente."), 403)
+    else:
+        contenido, error, estado = obtener_pdf()
+        if error:
+            resultado = (jsonify(error=error), estado)
+        else:
+            resultado = Response(contenido, mimetype="application/pdf", headers={"Content-Disposition": 'attachment; filename="reporte-cine-paradiso.pdf"'})
+    return resultado
 
 
 @admin_bp.route("/servicios", methods=["GET"], endpoint="servicios")

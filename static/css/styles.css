@@ -279,3 +279,48 @@ input[type="checkbox"],input[type="radio"] { accent-color: var(--red); }
 #form-login button[type="submit"] {
   margin-top: 10px;
 }
+/* Dashboard administrativo */
+.dashboard-section {
+    margin-top: 22px;
+}
+
+.dashboard-filters {
+    margin-bottom: 20px;
+}
+
+.dashboard-actions {
+    grid-column: 1 / -1;
+    margin-top: 0;
+}
+
+.dashboard-notificaciones {
+    position: fixed;
+    z-index: 100;
+    top: 18px;
+    right: 18px;
+    width: min(380px, calc(100% - 36px));
+    display: grid;
+    gap: 8px;
+}
+
+.dashboard-aviso {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px;
+    background: #501d22;
+    color: white;
+    border: 1px solid #ed626b;
+    border-radius: 9px;
+    box-shadow: var(--shadow);
+}
+
+.dashboard-aviso button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1.3rem;
+    line-height: 1;
+}
