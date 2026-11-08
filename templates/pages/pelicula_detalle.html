@@ -63,7 +63,7 @@
                     <p><strong>Sala:</strong> {{ f.nombre_sala }}</p>
                     <p><strong>Precio:</strong> ${{ f.precio_entrada|int }}</p>
 
-                    <a href="/funciones/{{ f.id_funcion }}/butacas" class="btn btn-primary">Seleccionar butacas</a>
+                    <a href="/checkout/funcion/{{ f.id_funcion }}" class="btn btn-primary">Comprar entradas</a>
                 </div>
             {% endfor %}
         </div>

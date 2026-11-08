@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Comprobante de compra - Cine Paradiso{% endblock %}
+
+{% block content %}
+<section class="container detalle-pelicula">
+    <h1 class="title-playfair">¡Compra confirmada!</h1>
+
+    <div class="funcion-card" style="margin-bottom: 2rem;">
+        <h3>Comprobante #{{ compra.compra.id_compra }}</h3>
+        <p><strong>Estado:</strong> {{ compra.compra.estado_compra }}</p>
+        <p><strong>Fecha de compra:</strong> {{ compra.compra.fecha_compra|datetimeformat }}</p>
+        
+        {% if funcion %}
+        <hr style="margin: 1rem 0; border: none; border-top: 1px solid #eee;">
+        <h4>Detalle de la función</h4>
+        <p><strong>Película:</strong> {{ funcion.titulo_pelicula }}</p>
+        <p><strong>Sucursal:</strong> {{ funcion.nombre_sucursal }}</p>
+        <p><strong>Sala:</strong> {{ funcion.nombre_sala }}</p>
+        <p><strong>Fecha y horario:</strong> {{ funcion.fecha_hora|datetimeformat }}</p>
+        {% endif %}
+        
+        <hr style="margin: 1rem 0; border: none; border-top: 1px solid #eee;">
+        <h4>Entradas</h4>
+        <p><strong>Butacas:</strong> {{ compra.entradas|join(", ", attribute="numero") }}</p>
+        
+        {% if compra.servicios %}
+            <h4>Servicios</h4>
+            <ul>
+                {% for s in compra.servicios %}
+                    <li>{{ s.nombre_servicio }} x{{ s.cantidad }} - {{ s.precio_unitario|pesos }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        
+        <p><strong>Total pagado:</strong> {{ compra.compra.monto_total|pesos }}</p>
+    </div>
+
+    {% if compra.compra.codigo_qr %}
+        <div style="text-align: center; margin: 2rem 0;">
+            <h3>Tu código QR</h3>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ compra.compra.codigo_qr }}" alt="Código QR" style="max-width: 200px;">
+            <p><small>{{ compra.compra.codigo_qr }}</small></p>
+        </div>
+    {% endif %}
+
+    <div class="form-actions">
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary">Volver al inicio</a>
+    </div>
+</section>
+{% endblock %}

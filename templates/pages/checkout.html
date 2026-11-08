@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Resumen de compra - Cine Paradiso{% endblock %}
+
+{% block content %}
+<section class="container detalle-pelicula">
+    <h1 class="title-playfair">Resumen de tu compra</h1>
+
+    <div class="funcion-card" style="margin-bottom: 2rem;">
+        <h3>Detalle de la función</h3>
+        <p><strong>Película:</strong> {{ funcion.titulo_pelicula }}</p>
+        <p><strong>Sucursal:</strong> {{ funcion.nombre_sucursal }}</p>
+        <p><strong>Sala:</strong> {{ funcion.nombre_sala }}</p>
+        <p><strong>Fecha y horario:</strong> {{ funcion.fecha_hora|datetimeformat }}</p>
+        <p><strong>Precio por entrada:</strong> {{ funcion.precio_entrada|pesos }}</p>
+    </div>
+
+    <h2>Servicios adicionales</h2>
+    <form method="POST" action="">
+        {% if servicios %}
+            <div class="servicios-lista">
+                {% for servicio in servicios %}
+                    <div class="servicio-item">
+                        <label>
+                            {{ servicio.nombre }} - {{ servicio.precio|pesos }}
+                        </label>
+                        <input type="number" name="servicio_{{ servicio.id_servicio }}" min="0" max="10" value="0" class="input" style="width: 80px;">
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No hay servicios disponibles.</p>
+        {% endif %}
+
+        <div class="form-actions" style="margin-top: 2rem;">
+            <button type="submit" name="accion" value="comprar" class="btn btn-primary">Confirmar y pagar</button>
+            <button type="submit" name="accion" value="abandonar" class="btn btn-quiet">Abandonar</button>
+        </div>
+    </form>
+</section>
+
+<style>
+.servicios-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.servicio-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    border: 1px solid #eee;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}

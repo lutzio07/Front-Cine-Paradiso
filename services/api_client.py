@@ -21,11 +21,12 @@ def get(endpoint, params=None, headers=None):
     return response.json()
 
 
-def post(endpoint, data=None, headers=None):
+def post(endpoint, data=None, headers=None, cookies=None):
     response = requests.post(
         f"{_backend_url()}{endpoint}",
         json=data,
         headers=headers,
+        cookies=cookies,
         timeout=5,
     )
     response.raise_for_status()
@@ -115,3 +116,50 @@ def obtener_sucursales():
     if not isinstance(sucursales, list):
         raise ValueError("La respuesta del backend no contiene una lista de sucursales")
     return sucursales
+
+def obtener_funcion_por_id(id_funcion):
+    response = get(f"/funciones/{id_funcion}")
+    if response.get("status") != "success":
+        raise RuntimeError(response.get("message", "No se pudo obtener la funcion"))
+    return response.get("data")
+
+def obtener_asientos_disponibles(id_funcion):
+    response = get(f"/funciones/{id_funcion}/asientos")
+    if response.get("status") != "success":
+        raise RuntimeError(response.get("message", "No se pudieron obtener los asientos"))
+    asientos = response.get("data", [])
+    disponibles = [a for a in asientos if a.get("estado") == "DISPONIBLE"]
+    return disponibles
+
+def obtener_servicios():
+    response = get("/servicios")
+    if response.get("status") != "success":
+        raise RuntimeError(response.get("message", "No se pudieron obtener los servicios"))
+    return response.get("data", [])
+
+def crear_compra(id_funcion, servicios_data):
+    from flask import session
+    backend_session = session.get("backend_session")
+    
+# Obtener un asiento disponible automáticamente
+    asientos = obtener_asientos_disponibles(id_funcion)
+    if not asientos:
+        raise RuntimeError("No hay asientos disponibles para esta función")
+    
+# Seleccionar el primer asiento disponible
+    asientos_ids = [asientos[0]["id_asiento"]]
+    
+    data = {
+        "id_funcion": id_funcion,
+        "asientos_ids": asientos_ids,
+        "servicios": servicios_data
+    }
+    return post("/compras", data, cookies={"session": backend_session} if backend_session else None)
+
+def obtener_compra_por_id(id_compra):
+    from flask import session
+    backend_session = session.get("backend_session")
+    response = get(f"/compras/{id_compra}", headers={"Cookie": f"session={backend_session}"} if backend_session else None)
+    if response.get("status") != "success":
+        raise RuntimeError(response.get("message", "No se pudo obtener la compra"))
+    return response.get("data")

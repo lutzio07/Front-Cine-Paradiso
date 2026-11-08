@@ -5,7 +5,11 @@ from services.api_client import (
     obtener_peliculas,
     obtener_funciones,
     obtener_sucursales,
-    )
+    obtener_funcion_por_id,
+    obtener_servicios,
+    crear_compra,
+    obtener_compra_por_id,
+)
 from services.cartelera_service import armar_cartelera
 from datetime import datetime
 from requests.exceptions import RequestException
@@ -110,3 +114,76 @@ def pesos(value):
         return "${:,.0f}".format(float(value)).replace(",", ".")
     except (ValueError, TypeError):
         return value
+
+
+@main_bp.route("/checkout/funcion/<int:id_funcion>", methods=["GET", "POST"])
+def checkout(id_funcion):
+    if not session.get("backend_session"):
+        flash("Iniciá sesión para continuar con la compra.", "warning")
+        return redirect(url_for("main.index"))
+
+    try:
+        funcion = obtener_funcion_por_id(id_funcion)
+        servicios = obtener_servicios()
+    except Exception:
+        flash("No se pudo cargar el resumen de la compra.", "danger")
+        return redirect(url_for("main.index"))
+
+    if request.method == "POST":
+        accion = request.form.get("accion")
+
+        if accion == "abandonar":
+            flash("Compra abandonada.", "info")
+            return redirect(url_for("main.index"))
+
+# Recopilar servicios seleccionados
+        servicios_data = []
+        for key, value in request.form.items():
+            if key.startswith("servicio_"):
+                sid = key.replace("servicio_", "")
+                cant = int(value)
+                if cant > 0:
+                    servicios_data.append({"id_servicio": int(sid), "cantidad": cant})
+
+        try:
+            resultado = crear_compra(id_funcion, servicios_data)
+            id_compra = resultado.get("data", {}).get("compra", {}).get("id_compra")
+            if id_compra is None:
+                id_compra = resultado.get("id_compra")
+            if id_compra is None:
+                flash("No se pudo crear la compra. Intentá de nuevo.", "danger")
+                return render_template("pages/checkout.html", funcion=funcion, servicios=servicios, error=True)
+            return redirect(url_for("main.comprobante", id_compra=id_compra))
+        except Exception as e:
+            if "No hay asientos disponibles" in str(e):
+                flash("No hay asientos disponibles para esta función.", "danger")
+            else:
+                flash("No se pudo crear la compra. Intentá de nuevo.", "danger")
+            return render_template("pages/checkout.html", funcion=funcion, servicios=servicios, error=True)
+
+    return render_template("pages/checkout.html", funcion=funcion, servicios=servicios, error=False)
+
+
+@main_bp.route("/comprobante/<int:id_compra>")
+def comprobante(id_compra):
+    if not session.get("backend_session"):
+        flash("Iniciá sesión para ver el comprobante.", "warning")
+        return redirect(url_for("main.index"))
+
+    try:
+        compra = obtener_compra_por_id(id_compra)
+    except Exception:
+        flash("No se pudo cargar el comprobante.", "danger")
+        return redirect(url_for("main.index"))
+
+# Obtener datos de la función desde la primera entrada
+    funcion = None
+    if compra.get("entradas") and compra["entradas"]:
+        id_funcion = compra["entradas"][0].get("id_funcion")
+        if id_funcion:
+            try:
+                funcion = obtener_funcion_por_id(id_funcion)
+            except Exception:
+                pass
+
+    return render_template("pages/comprobante.html", compra=compra, funcion=funcion)
