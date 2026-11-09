@@ -169,7 +169,7 @@ input[type="checkbox"],input[type="radio"] { accent-color: var(--red); }
 .service-card p { margin: 0; font-size: .83rem; }
 .service-control { display: flex; align-items: center; gap: 7px; }
 .qty-button { width: 31px; height: 31px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-3); color: white; }
-.service-qty { min-width: 22px; text-align: center; font-weight: 700; }
+.service-qty { width: 65px; min-width: 65px; text-align: center; font-weight: 700; }
 .auth-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); min-height: 620px; max-width: 1030px; margin-inline: auto; border-radius: 18px; border: 1px solid var(--border); overflow: hidden; }
 .auth-promo { display: flex; flex-direction: column; justify-content: end; padding: 46px; background: linear-gradient(140deg,#5a151a,#171616 78%); }
 .auth-promo .material-symbols-outlined { font-size: 47px; color: #ed3841; margin-bottom: auto; }
