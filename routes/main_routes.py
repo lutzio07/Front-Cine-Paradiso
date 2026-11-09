@@ -145,20 +145,44 @@ def index():
     sucursales = []
     cartelera = []
     error = False
+    error_funciones = False
+
     try:
         peliculas = obtener_peliculas(genero=genero)
-        funciones = obtener_funciones(id_sucursal=id_sucursal, fecha=fecha)
+        generos = sorted(set(
+            p["genero"] for p in peliculas
+            if "genero" in p and p["genero"]
+        ))
         sucursales = obtener_sucursales()
-        cartelera = armar_cartelera(peliculas, funciones, filtrando=bool(id_sucursal or fecha))
-        generos = sorted(set(p["genero"] for p in peliculas if "genero" in p and p["genero"]))
+
     except (RequestException, RuntimeError, ValueError):
         error = True
+
+    if not error:
+        try:
+            funciones = obtener_funciones(
+                id_sucursal=id_sucursal,
+                fecha=fecha
+            )
+            cartelera = armar_cartelera(
+                peliculas,
+                funciones,
+                filtrando=bool(id_sucursal or fecha)
+            )
+
+        except (RequestException, RuntimeError, ValueError):
+            error_funciones = True
+            cartelera = [
+                {**p, "con_funciones": False}
+                for p in peliculas
+            ]
 
     return render_template(
         "pages/index.html",
         peliculas=cartelera,
         generos_disponibles=generos,
         error=error,
+        error_funciones=error_funciones,
         sucursales=sucursales,
     )
 
@@ -166,25 +190,56 @@ def index():
 def pelicula_detalle(id_pelicula):
     id_sucursal = request.args.get("id_sucursal", default=None, type=int)
     fecha = request.args.get("fecha", default=None, type=str)
+
     pelicula = None
     funciones = []
     sucursales = []
     error = False
+    error_funciones = False
+    error_sucursales = False
+
     try:
         pelicula = obtener_pelicula_por_id(id_pelicula=id_pelicula)
-        if pelicula:
-            funciones = obtener_funciones(id_sucursal=id_sucursal, fecha=fecha, id_pelicula=id_pelicula)
-            sucursales = obtener_sucursales()
     except (RequestException, RuntimeError, ValueError):
         error = True
 
     if error:
-        return render_template("pages/pelicula_detalle.html", pelicula=pelicula, funciones=[], error=True), 503
+        return render_template(
+            "pages/pelicula_detalle.html",
+            pelicula=None,
+            funciones=[],
+            sucursales=[],
+            error=True,
+            error_funciones=False,
+            error_sucursales=False
+        ), 503
 
     if not pelicula:
-        return render_template("pages/pelicula_detalle.html", pelicula=None, funciones=[], error=False), 404
-    
-    return render_template("pages/pelicula_detalle.html", pelicula=pelicula, funciones=funciones, sucursales=sucursales, error=False)
+        return render_template(
+            "pages/pelicula_detalle.html",
+            pelicula=None,
+            funciones=[],
+            sucursales=[],
+            error=False,
+            error_funciones=False,
+            error_sucursales=False
+        ), 404
+
+    try:
+        funciones = obtener_funciones(
+            id_sucursal=id_sucursal,
+            fecha=fecha,
+            id_pelicula=id_pelicula
+        )
+    except (RequestException, RuntimeError, ValueError):
+        error_funciones = True
+
+    try:
+        sucursales = obtener_sucursales()
+    except (RequestException, RuntimeError, ValueError):
+        error_sucursales = True
+
+    return render_template("pages/pelicula_detalle.html", pelicula=pelicula, funciones=funciones, sucursales=sucursales, error=False, error_funciones=error_funciones, error_sucursales=error_sucursales)
 
 @main_bp.route("/perfil")
 def perfil():
