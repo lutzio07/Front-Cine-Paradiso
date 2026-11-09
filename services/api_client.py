@@ -115,3 +115,25 @@ def obtener_sucursales():
     if not isinstance(sucursales, list):
         raise ValueError("La respuesta del backend no contiene una lista de sucursales")
     return sucursales
+
+
+def obtener_funcion_por_id(id_funcion):
+    response = get(f"/funciones/{id_funcion}")
+    if response.get("status") == "error":
+        return None
+    if response.get("status") != "success":
+        raise RuntimeError(response.get("message", "No se pudo obtener la función"))
+    return response.get("data")
+
+
+def obtener_asientos_por_funcion(id_funcion):
+    response = get(f"/funciones/{id_funcion}/asientos")
+    if response.get("status") == "error":
+        return None
+    if response.get("status") != "success":
+        raise RuntimeError(response.get("message", "No se pudo obtener la disponibilidad de asientos"))
+
+    asientos = response.get("data", [])
+    if not isinstance(asientos, list):
+        raise ValueError("La respuesta del backend no contiene una lista de asientos")
+    return asientos
