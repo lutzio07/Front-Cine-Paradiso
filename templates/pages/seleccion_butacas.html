@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if funcion %}
+    Selección de Butacas - {{ funcion.titulo_pelicula }} - Cine Paradiso
+{% else %}
+    Selección de Butacas - Cine Paradiso
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="container seleccion-butacas-page">
+    {% if error %}
+        <div class="card empty-state-card text-center stack gap-md">
+            <span class="material-symbols-outlined text-accent" style="font-size: 48px;">cloud_off</span>
+            <h2>No pudimos conectar con el servidor</h2>
+            <p>Ocurrió un inconveniente al cargar el mapa de la sala. Por favor, intentá nuevamente en unos instantes.</p>
+            <div>
+                <a href="{{ url_for('main.index') }}" class="btn btn-primary">Volver a la cartelera</a>
+            </div>
+        </div>
+    {% elif not funcion %}
+        <div class="card empty-state-card text-center stack gap-md">
+            <span class="material-symbols-outlined text-accent" style="font-size: 48px;">theaters</span>
+            <h2>Función no encontrada</h2>
+            <p>La función que estás buscando no existe o ya no está disponible.</p>
+            <div>
+                <a href="{{ url_for('main.index') }}" class="btn btn-quiet">Volver a la cartelera</a>
+            </div>
+        </div>
+    {% else %}
+
+    <!-- Navegación superior y pasos de compra -->
+    <div class="booking-breadcrumb">
+        <a href="{{ url_for('main.pelicula_detalle', id_pelicula=funcion.id_pelicula) }}" class="breadcrumb-back">
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Volver a la película</span>
+        </a>
+        <div class="breadcrumb-steps">
+            <span class="step active">Paso 01 / Butacas</span>
+            <span class="step-divider">/</span>
+            <span class="step">Paso 02 / Checkout &amp; Pago</span>
+        </div>
+    </div>
+
+    <!-- Banner con detalle de la función y película -->
+    <div class="function-banner card raised">
+        <div class="function-banner-left">
+            <img src="{{ pelicula.poster_url if (pelicula and pelicula.poster_url) else 'https://via.placeholder.com/120x180' }}"
+                 alt="{{ funcion.titulo_pelicula }}"
+                 class="function-poster">
+
+            <div class="function-info">
+                <div class="function-badges">
+                    {% if pelicula and pelicula.clasificacion %}
+                        <span class="badge badge-red">{{ pelicula.clasificacion }}</span>
+                    {% endif %}
+                    <span class="badge">{{ funcion.nombre_sala }}</span>
+                    {% if pelicula and pelicula.duracion_min %}
+                        <span class="badge">{{ pelicula.duracion_min }} min</span>
+                    {% endif %}
+                    {% if pelicula and pelicula.genero %}
+                        <span class="badge badge-outline">{{ pelicula.genero }}</span>
+                    {% endif %}
+                </div>
+
+                <h1 class="function-title">{{ funcion.titulo_pelicula }}</h1>
+
+                <div class="function-metadata">
+                    <span>
+                        <span class="material-symbols-outlined text-accent">pin_drop</span>
+                        {{ funcion.nombre_sucursal }}
+                    </span>
+                    <span>&bull;</span>
+                    <span>
+                        <span class="material-symbols-outlined text-accent">schedule</span>
+                        {{ funcion.fecha_hora|datetimeformat }}
+                    </span>
+                    <span>&bull;</span>
+                    <span class="strong accent">
+                        {{ funcion.precio_entrada|pesos }} c/u
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="function-banner-stat">
+            <span class="stat-label">Aforo de la sala</span>
+            <span class="stat-number" id="stat-disponibles">{{ estadisticas.disponibles }}</span>
+            <span class="stat-sub">butacas libres de {{ estadisticas.total }}</span>
+        </div>
+    </div>
+
+    <!-- Formulario interactivo principal -->
+    <form id="form-butacas"
+          method="POST"
+          action="{{ url_for('main.guardar_seleccion_butacas', id_funcion=funcion.id_funcion) }}"
+          data-precio="{{ funcion.precio_entrada|default(0) }}"
+          data-disponibles="{{ estadisticas.disponibles|default(0) }}"
+          data-max="6">
+        <div class="content-grid seating-layout">
+
+            <!-- Columna izquierda: Grilla interactiva de butacas -->
+            <section class="card seat-map-card">
+                <!-- Leyenda de estados -->
+                <div class="seat-legend">
+                    <div class="legend-item">
+                        <span class="seat-chip chip-available"></span>
+                        <span>Disponible</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="seat-chip chip-occupied"></span>
+                        <span>Ocupada</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="seat-chip chip-selected"></span>
+                        <span>Tu Selección</span>
+                    </div>
+                </div>
+
+                <!-- Representación visual de la pantalla de cine -->
+                <div class="screen-wrapper">
+                    <svg class="screen-arc" viewBox="0 0 540 32" preserveAspectRatio="none">
+                        <defs>
+                            <linearGradient id="screen-glow-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#ef2633" stop-opacity="0.30"/>
+                                <stop offset="100%" stop-color="#ef2633" stop-opacity="0"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M 15 26 Q 270 4 525 26" stroke="#ef2633" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+                        <path d="M 15 26 Q 270 4 525 26 L 525 32 L 15 32 Z" fill="url(#screen-glow-grad)"/>
+                    </svg>
+                    <span class="screen-text">P A N T A L L A</span>
+                </div>
+
+                <!-- Grilla de la sala agrupada por filas -->
+                <div class="seating-matrix-container">
+                    <div class="seating-matrix" id="seating-matrix">
+                        {% for fila, asientos in mapa_filas.items() %}
+                            <div class="seat-row">
+                                <span class="row-letter" aria-hidden="true">{{ fila }}</span>
+                                <div class="row-seats">
+                                    {% for a in asientos %}
+                                        {% set is_selected = (a.id_asiento in asientos_previamente_seleccionados) %}
+                                        {% set is_occupied = (a.estado == 'OCUPADO') %}
+                                        <label class="seat-cell {% if is_occupied %}occupied{% elif is_selected %}selected{% endif %}"
+                                               title="Fila {{ a.fila }} - Butaca {{ a.numero }}{% if is_occupied %} (Ocupada){% endif %}">
+                                            <input type="checkbox"
+                                                   name="asientos_ids"
+                                                   value="{{ a.id_asiento }}"
+                                                   data-id="{{ a.id_asiento }}"
+                                                   data-fila="{{ a.fila }}"
+                                                   data-numero="{{ a.numero }}"
+                                                   {% if is_occupied %}disabled aria-disabled="true"{% endif %}
+                                                   {% if is_selected %}checked{% endif %}
+                                                   class="seat-checkbox visually-hidden">
+                                            <span class="seat-number">{{ a.numero }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                <span class="row-letter" aria-hidden="true">{{ fila }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Nota al pie informativa -->
+                <div class="seat-instructions">
+                    <span class="material-symbols-outlined text-accent">touch_app</span>
+                    <span>Hacé clic en una butaca libre para elegirla o quitarla. Máximo 6 butacas por compra.</span>
+                </div>
+            </section>
+
+            <!-- Columna derecha: Resumen flotante -->
+            <aside class="seat-sidebar">
+                <div class="card summary-card raised">
+                    <div class="summary-header">
+                        <div class="flex align-center gap-sm">
+                            <span class="material-symbols-outlined text-accent">confirmation_number</span>
+                            <h2 class="summary-title">Resumen de Orden</h2>
+                        </div>
+                        <span class="badge badge-outline">{{ funcion.nombre_sala }}</span>
+                    </div>
+
+                    <!-- Butacas asignadas dinámicas -->
+                    <div class="summary-section">
+                        <span class="eyebrow">Butacas seleccionadas:</span>
+                        <div id="selected-badges-list" class="selected-badges-list">
+                            <span class="muted text-small italic" id="empty-seats-notice">Ninguna butaca seleccionada</span>
+                        </div>
+                    </div>
+
+                    <!-- Detalle rápido de la función -->
+                    <div class="card soft summary-details-box">
+                        <div class="summary-row">
+                            <span class="muted">Película:</span>
+                            <span class="strong">{{ funcion.titulo_pelicula }}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="muted">Función:</span>
+                            <span>{{ funcion.fecha_hora|datetimeformat }}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="muted">Sala:</span>
+                            <span>{{ funcion.nombre_sala }} ({{ funcion.nombre_sucursal }})</span>
+                        </div>
+                    </div>
+
+                    <!-- Desglose de precios -->
+                    <div class="summary-pricing">
+                        <div class="summary-row">
+                            <span id="label-desglose">0x Entrada General</span>
+                            <span class="strong" id="val-subtotal">$0</span>
+                        </div>
+                        <div class="summary-row text-small">
+                            <span class="muted">Costo del servicio online</span>
+                            <span class="badge badge-green">Bonificado</span>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Total general -->
+                    <div class="summary-total-row">
+                        <div>
+                            <span class="eyebrow">Total a Pagar</span>
+                            <span class="text-small muted block">Impuestos incluidos</span>
+                        </div>
+                        <div class="total-amount" id="val-total">$0</div>
+                    </div>
+
+                    <!-- Botón de acción principal -->
+                    <button type="submit" id="btn-submit-butacas" class="btn btn-primary btn-full" disabled>
+                        <span>Continuar al Checkout</span>
+                        <span class="material-symbols-outlined">arrow_forward</span>
+                    </button>
+
+                    <div class="summary-footer-note">
+                        <span class="material-symbols-outlined text-accent">lock</span>
+                        <span>Confirmación segura al momento del pago.</span>
+                    </div>
+                </div>
+            </aside>
+
+        </div>
+    </form>
+
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const formButacas = document.getElementById('form-butacas');
+    if (!formButacas) {
+        return;
+    }
+
+    const PRECIO_UNITARIO = parseFloat(formButacas.dataset.precio) || 0;
+    const MAX_BUTACAS = parseInt(formButacas.dataset.max, 10) || 6;
+    const TOTAL_INICIAL_DISPONIBLES = parseInt(formButacas.dataset.disponibles, 10) || 0;
+
+    const checkboxes = document.querySelectorAll('.seat-checkbox:not(:disabled)');
+    const badgesContainer = document.getElementById('selected-badges-list');
+    const labelDesglose = document.getElementById('label-desglose');
+    const valSubtotal = document.getElementById('val-subtotal');
+    const valTotal = document.getElementById('val-total');
+    const btnSubmit = document.getElementById('btn-submit-butacas');
+    const statDisponibles = document.getElementById('stat-disponibles');
+
+    function formatearPesos(monto) {
+        return '$' + Number(monto).toLocaleString('es-AR', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+    }
+
+    function actualizarInterfaz() {
+        const seleccionados = Array.from(checkboxes).filter(cb => cb.checked);
+        const cantidad = seleccionados.length;
+
+        // 1. Actualizar badges en la barra lateral
+        badgesContainer.innerHTML = '';
+        if (cantidad === 0) {
+            badgesContainer.innerHTML = '<span class="muted text-small italic" id="empty-seats-notice">Ninguna butaca seleccionada</span>';
+            labelDesglose.textContent = `0x Entrada General (${formatearPesos(PRECIO_UNITARIO)} c/u)`;
+            valSubtotal.textContent = '$0';
+            valTotal.textContent = '$0';
+            btnSubmit.disabled = true;
+        } else {
+            btnSubmit.disabled = false;
+            seleccionados.forEach(cb => {
+                const fila = cb.dataset.fila;
+                const numero = cb.dataset.numero;
+                const chip = document.createElement('div');
+                chip.className = 'selected-seat-chip';
+                chip.innerHTML = `<span class="material-symbols-outlined">event_seat</span><span>Fila ${fila} - Butaca ${numero}</span>`;
+                badgesContainer.appendChild(chip);
+            });
+
+            const subtotal = cantidad * PRECIO_UNITARIO;
+            labelDesglose.textContent = `${cantidad}x Entrada General (${formatearPesos(PRECIO_UNITARIO)} c/u)`;
+            valSubtotal.textContent = formatearPesos(subtotal);
+            valTotal.textContent = formatearPesos(subtotal);
+        }
+
+        // 2. Actualizar estado visual de cada celda
+        checkboxes.forEach(cb => {
+            const cell = cb.closest('.seat-cell');
+            if (cell) {
+                if (cb.checked) {
+                    cell.classList.add('selected');
+                } else {
+                    cell.classList.remove('selected');
+                }
+            }
+        });
+
+        // 3. Actualizar aforo restante visible
+        if (statDisponibles) {
+            statDisponibles.textContent = Math.max(0, TOTAL_INICIAL_DISPONIBLES - cantidad);
+        }
+    }
+
+    // Escuchar clics/cambios en cada butaca
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            const seleccionados = Array.from(checkboxes).filter(c => c.checked);
+            if (seleccionados.length > MAX_BUTACAS) {
+                cb.checked = false;
+                alert(`Podés seleccionar un máximo de ${MAX_BUTACAS} butacas por compra.`);
+                return;
+            }
+            actualizarInterfaz();
+        });
+    });
+
+    // Sincronizar estado inicial (por si viene selección previa de sesión)
+    actualizarInterfaz();
+})();
+</script>
+{% endblock %}
+
