@@ -130,6 +130,7 @@ def obtener_servicios():
 
     return servicios
 
+
 def crear_compra(datos, cookie_backend):
     response = requests.post(
         f"{_backend_url()}/compras",
@@ -146,3 +147,25 @@ def crear_compra(datos, cookie_backend):
     response.raise_for_status()
 
     return respuesta
+
+
+def obtener_funcion_por_id(id_funcion):
+    response = get(f"/funciones/{id_funcion}")
+    if response.get("status") == "error":
+        return None
+    if response.get("status") != "success":
+        raise RuntimeError(response.get("message", "No se pudo obtener la función"))
+    return response.get("data")
+
+
+def obtener_asientos_por_funcion(id_funcion):
+    response = get(f"/funciones/{id_funcion}/asientos")
+    if response.get("status") == "error":
+        return None
+    if response.get("status") != "success":
+        raise RuntimeError(response.get("message", "No se pudo obtener la disponibilidad de asientos"))
+
+    asientos = response.get("data", [])
+    if not isinstance(asientos, list):
+        raise ValueError("La respuesta del backend no contiene una lista de asientos")
+    return asientos

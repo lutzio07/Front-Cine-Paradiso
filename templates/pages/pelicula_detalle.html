@@ -88,7 +88,7 @@
                     <p><strong>Sala:</strong> {{ f.nombre_sala }}</p>
                     <p><strong>Precio:</strong> ${{ f.precio_entrada|int }}</p>
 
-                    <a href="{{ url_for('main.seleccionar_butacas', id_funcion=f.id_funcion) }}"
+                    <a href="{{ url_for('main.seleccion_butacas', id_funcion=f.id_funcion) }}"
                         class="btn btn-primary">
                         Seleccionar butacas
                     </a>
