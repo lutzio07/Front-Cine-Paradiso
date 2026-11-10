@@ -16,6 +16,7 @@ from services.admin_service import (
     eliminar_sala as servicio_eliminar_sala,
     obtener_datos_backoffice_peliculas,
     obtener_servicios,
+    validar_codigo_qr as servicio_validar_codigo_qr, consultar_lista,
 )
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -85,12 +86,85 @@ def validador():
         )
         return redirect(url_for("auth.vista_login"))
 
+    funciones, _ = consultar_lista("/funciones", "funciones")
+
     return render_template(
         "pages/admin_validador.html",
         section="admin",
         active="validador",
+        funciones=funciones,
+        resultado=None,
+        mensaje=None,
+        datos=None,
+        tipo=None,
     )
 
+@admin_bp.route("/validador", methods=["POST"], endpoint="validador_post")
+def validador_post():
+    from flask import current_app
+
+    if not es_admin():
+        flash("Acceso no autorizado.", "error")
+        return redirect(url_for("auth.vista_login"))
+
+    codigo_qr = request.form.get("codigo_qr", "").strip()
+    id_funcion_raw = request.form.get("id_funcion", "").strip()
+
+    if not codigo_qr:
+        funciones, _ = consultar_lista("/funciones", "funciones")
+        return render_template(
+            "pages/admin_validador.html",
+            section="admin",
+            active="validador",
+            funciones=funciones,
+            resultado=False,
+            mensaje="Ingresá el código QR.",
+            datos=None,
+            tipo="denegado",
+        )
+
+    if not id_funcion_raw:
+        funciones, _ = consultar_lista("/funciones", "funciones")
+        return render_template(
+            "pages/admin_validador.html",
+            section="admin",
+            active="validador",
+            funciones=funciones,
+            resultado=False,
+            mensaje="Seleccioná una función.",
+            datos=None,
+            tipo="denegado",
+        )
+
+    try:
+        id_funcion = int(id_funcion_raw)
+    except ValueError:
+        funciones, _ = consultar_lista("/funciones", "funciones")
+        return render_template(
+            "pages/admin_validador.html",
+            section="admin",
+            active="validador",
+            funciones=funciones,
+            resultado=False,
+            mensaje="El ID de función debe ser un número válido.",
+            datos=None,
+            tipo="denegado",
+        )
+
+    exito, mensaje_servicio, datos = servicio_validar_codigo_qr(codigo_qr, id_funcion)
+
+    funciones, _ = consultar_lista("/funciones", "funciones")
+
+    return render_template(
+        "pages/admin_validador.html",
+        section="admin",
+        active="validador",
+        funciones=funciones,
+        resultado=exito,
+        mensaje=mensaje_servicio,
+        datos=datos,
+        tipo="permitido" if exito else "denegado",
+    )
 
 @admin_bp.route("/salas", methods=["POST"], endpoint="crear_sala")
 def crear_sala():
