@@ -407,14 +407,13 @@ def guardar_seleccion_butacas(id_funcion):
         "fecha_hora": funcion.get("fecha_hora", "") if funcion else "",
     }
 
+    session["compra_pendiente"] = {
+    "id_funcion": id_funcion,
+    "asientos_ids": sorted(asientos_ids),
+    }
+
     flash(f"Seleccionaste {len(asientos_ids)} butaca(s) correctamente.", "success")
-    try:
-        return redirect(url_for("main.checkout", id_funcion=id_funcion))
-    except Exception:
-        try:
-            return redirect(url_for("main.checkout"))
-        except Exception:
-            return redirect(url_for("main.seleccion_butacas", id_funcion=id_funcion))
+    return redirect(url_for("main.seleccionar_servicios"))
 
 
 @main_bp.app_template_filter("datetimeformat")
