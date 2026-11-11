@@ -1,0 +1,100 @@
+.four-cols {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  padding: 20px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.stat-card .stat-label {
+  color: var(--muted);
+  font-size: .79rem;
+}
+
+.stat-card .stat-value {
+  font: 700 clamp(1.5rem, 2vw, 2rem) Outfit, sans-serif;
+  margin-top: 8px;
+}
+
+.stat-card .stat-hint {
+  font-size: .75rem;
+  color: var(--muted);
+}
+
+/* Gráficos de barras para métricas */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.metric-bars {
+  display: grid;
+  gap: 17px;
+}
+
+.metric-bar {
+  display: grid;
+  gap: 7px;
+}
+
+.metric-bar > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: .83rem;
+}
+
+.bar-track {
+  background: var(--surface-4);
+  height: 9px;
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  background: linear-gradient(90deg, #9c1420, #ee4050);
+  height: 100%;
+  border-radius: 9px;
+  transition: width 0.4s ease;
+}
+
+/* Filtros y acciones del Dashboard */
+.dashboard-section {
+  margin-top: 26px;
+}
+
+.dashboard-filters {
+  margin-bottom: 20px;
+}
+
+.dashboard-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+}
+
+/* Responsividad */
+@media (max-width: 1100px) {
+  .four-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .four-cols {
+    grid-template-columns: 1fr;
+  }
+}

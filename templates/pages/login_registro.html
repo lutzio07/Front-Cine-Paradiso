@@ -3,6 +3,10 @@
 
 {% block title %}{% if modo == 'registro' %}Registrarme{% else %}Ingresar{% endif %} | Cine Paradiso{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login_registro.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container">
   <div class="auth-layout">
