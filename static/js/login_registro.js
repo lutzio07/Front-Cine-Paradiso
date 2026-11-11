@@ -13,7 +13,10 @@ if (tabLogin && tabRegister && formLogin && formRegister) {
 
     // Cambia la pestaña activa (mueve el indicador rojo)
     tabLogin.setAttribute('aria-selected', 'true');
+    tabLogin.classList.add('active');
+
     tabRegister.setAttribute('aria-selected', 'false');
+    tabRegister.classList.remove('active');
   });
 
   tabRegister.addEventListener('click', function() {
@@ -22,7 +25,10 @@ if (tabLogin && tabRegister && formLogin && formRegister) {
 
     // Cambia la pestaña activa (mueve el indicador rojo)
     tabRegister.setAttribute('aria-selected', 'true');
+    tabRegister.classList.add('active');
+
     tabLogin.setAttribute('aria-selected', 'false');
+    tabLogin.classList.remove('active');
   });
 }
 

@@ -1,0 +1,112 @@
+/* 
+Layout de dos columnas para formularios y tabla de salas 
+*/
+.two-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.two-cols > div {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 
+Tarjetas de formulario y contenedor de tablas 
+*/
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+}
+
+/* Tablas de gestion (Salas y Funciones) */
+.table-wrap {
+  overflow-x: auto;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table th {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  font-size: .69rem;
+  white-space: nowrap;
+  background: #242222;
+  padding: 15px 17px;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table td {
+  padding: 15px 17px;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table tbody tr:hover {
+  background: #292727;
+}
+
+/*
+Boton de eliminacion directa en tablas 
+*/
+.btn-delete-action {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.15s ease;
+}
+
+.btn-delete-action:hover {
+  background-color: #bd2130;
+}
+
+/* 
+Responsividad 
+*/
+@media (max-width: 860px) {
+  .two-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .card {
+    padding: 17px;
+  }
+  .data-table th, .data-table td {
+    padding: 10px 12px;
+  }
+}
