@@ -7,6 +7,9 @@ from services.api_client import (
     obtener_peliculas,
     obtener_funciones,
     obtener_sucursales,
+    obtener_sucursales,
+    obtener_servicios,
+    crear_compra,
 )
 from services.butacas_service import agrupar_asientos_por_fila
 from services.cartelera_service import armar_cartelera
@@ -16,6 +19,126 @@ from services.perfil_service import obtener_perfil
 from services.compras_service import obtener_detalle_compra
 from services.qr_service import generar_qr_data_url
 main_bp = Blueprint("main", __name__)
+
+@main_bp.route("/compras/servicios")
+def seleccionar_servicios():
+    if not session.get("backend_session"):
+        flash("Iniciá sesión para continuar con la compra.", "warning")
+        return redirect(url_for("auth.vista_login"))
+
+    if session.get("rol") != "CLIENTE":
+        flash("Solo los clientes pueden realizar compras.", "danger")
+        return redirect(url_for("main.index"))
+
+    compra_pendiente = session.get("compra_pendiente")
+
+    if not compra_pendiente:
+        flash("Primero tenés que seleccionar las butacas.", "warning")
+        return redirect(url_for("main.index"))
+
+    servicios = []
+    error_servicios = False
+
+    try:
+        servicios = obtener_servicios()
+    except (RequestException, RuntimeError, ValueError):
+        error_servicios = True
+
+    return render_template(
+        "pages/seleccion_servicios.html",
+        servicios=servicios,
+        error_servicios=error_servicios,
+        id_funcion=compra_pendiente["id_funcion"],
+        asientos_ids=compra_pendiente["asientos_ids"],
+    )
+
+@main_bp.post("/compras/servicios")
+def confirmar_compra_route():
+    if not session.get("backend_session"):
+        flash("Iniciá sesión para continuar con la compra.", "warning")
+        return redirect(url_for("auth.vista_login"))
+
+    if session.get("rol") != "CLIENTE":
+        flash("Solo los clientes pueden realizar compras.", "danger")
+        return redirect(url_for("main.index"))
+
+    compra_pendiente = session.get("compra_pendiente")
+
+    if not compra_pendiente:
+        flash("No hay una selección de butacas pendiente.", "warning")
+        return redirect(url_for("main.index"))
+
+    try:
+        catalogo_servicios = obtener_servicios()
+    except (RequestException, RuntimeError, ValueError):
+        flash("No se pudieron verificar los servicios adicionales. Intentá nuevamente.", "danger")
+        return redirect(url_for("main.seleccionar_servicios"))
+
+    if not all(
+        isinstance(servicio, dict)
+        and type(servicio.get("id_servicio")) is int
+        and servicio["id_servicio"] > 0
+        for servicio in catalogo_servicios
+    ):
+        flash("El catálogo de servicios contiene datos inválidos.", "danger")
+        return redirect(url_for("main.seleccionar_servicios"))
+
+    ids_servicios_validos = {
+        servicio["id_servicio"]
+        for servicio in catalogo_servicios
+    }
+
+    servicios = []
+
+    try:
+        for campo, valor in request.form.items():
+            if not campo.startswith("servicio_"):
+                continue
+
+            id_servicio = int(campo.removeprefix("servicio_"))
+            cantidad = int(valor)
+
+            if id_servicio <= 0 or id_servicio not in ids_servicios_validos or cantidad < 0 or cantidad > 10:
+                raise ValueError
+
+            if cantidad > 0:
+                servicios.append({
+                    "id_servicio": id_servicio,
+                    "cantidad": cantidad,
+                })
+
+    except ValueError:
+        flash("Las cantidades de los servicios no son válidas.", "danger")
+        return redirect(url_for("main.seleccionar_servicios"))
+
+    datos_compra = {
+        "id_funcion": compra_pendiente["id_funcion"],
+        "asientos_ids": compra_pendiente["asientos_ids"],
+        "servicios": servicios,
+    }
+
+    try:
+        respuesta = crear_compra(
+            datos_compra,
+            session["backend_session"],
+        )
+
+        if not isinstance(respuesta, dict):
+            raise ValueError("La respuesta del backend no es válida.")
+
+        if respuesta.get("status") != "success":
+            raise RuntimeError(
+                respuesta.get("message", "No se pudo completar la compra.")
+            )
+
+    except (RequestException, RuntimeError, ValueError):
+        flash("No se pudo completar la compra. Intentá nuevamente.", "danger")
+        return redirect(url_for("main.seleccionar_servicios"))
+
+    session.pop("compra_pendiente", None)
+
+    flash("¡Tu compra se realizó correctamente!", "success")
+    return redirect(url_for("main.perfil"))
 
 @main_bp.route("/")
 def index():
@@ -28,20 +151,44 @@ def index():
     sucursales = []
     cartelera = []
     error = False
+    error_funciones = False
+
     try:
         peliculas = obtener_peliculas(genero=genero)
-        funciones = obtener_funciones(id_sucursal=id_sucursal, fecha=fecha)
+        generos = sorted(set(
+            p["genero"] for p in peliculas
+            if "genero" in p and p["genero"]
+        ))
         sucursales = obtener_sucursales()
-        cartelera = armar_cartelera(peliculas, funciones, filtrando=bool(id_sucursal or fecha))
-        generos = sorted(set(p["genero"] for p in peliculas if "genero" in p and p["genero"]))
+
     except (RequestException, RuntimeError, ValueError):
         error = True
+
+    if not error:
+        try:
+            funciones = obtener_funciones(
+                id_sucursal=id_sucursal,
+                fecha=fecha
+            )
+            cartelera = armar_cartelera(
+                peliculas,
+                funciones,
+                filtrando=bool(id_sucursal or fecha)
+            )
+
+        except (RequestException, RuntimeError, ValueError):
+            error_funciones = True
+            cartelera = [
+                {**p, "con_funciones": False}
+                for p in peliculas
+            ]
 
     return render_template(
         "pages/index.html",
         peliculas=cartelera,
         generos_disponibles=generos,
         error=error,
+        error_funciones=error_funciones,
         sucursales=sucursales,
     )
 
@@ -49,25 +196,56 @@ def index():
 def pelicula_detalle(id_pelicula):
     id_sucursal = request.args.get("id_sucursal", default=None, type=int)
     fecha = request.args.get("fecha", default=None, type=str)
+
     pelicula = None
     funciones = []
     sucursales = []
     error = False
+    error_funciones = False
+    error_sucursales = False
+
     try:
         pelicula = obtener_pelicula_por_id(id_pelicula=id_pelicula)
-        if pelicula:
-            funciones = obtener_funciones(id_sucursal=id_sucursal, fecha=fecha, id_pelicula=id_pelicula)
-            sucursales = obtener_sucursales()
     except (RequestException, RuntimeError, ValueError):
         error = True
 
     if error:
-        return render_template("pages/pelicula_detalle.html", pelicula=pelicula, funciones=[], error=True), 503
+        return render_template(
+            "pages/pelicula_detalle.html",
+            pelicula=None,
+            funciones=[],
+            sucursales=[],
+            error=True,
+            error_funciones=False,
+            error_sucursales=False
+        ), 503
 
     if not pelicula:
-        return render_template("pages/pelicula_detalle.html", pelicula=None, funciones=[], error=False), 404
-    
-    return render_template("pages/pelicula_detalle.html", pelicula=pelicula, funciones=funciones, sucursales=sucursales, error=False)
+        return render_template(
+            "pages/pelicula_detalle.html",
+            pelicula=None,
+            funciones=[],
+            sucursales=[],
+            error=False,
+            error_funciones=False,
+            error_sucursales=False
+        ), 404
+
+    try:
+        funciones = obtener_funciones(
+            id_sucursal=id_sucursal,
+            fecha=fecha,
+            id_pelicula=id_pelicula
+        )
+    except (RequestException, RuntimeError, ValueError):
+        error_funciones = True
+
+    try:
+        sucursales = obtener_sucursales()
+    except (RequestException, RuntimeError, ValueError):
+        error_sucursales = True
+
+    return render_template("pages/pelicula_detalle.html", pelicula=pelicula, funciones=funciones, sucursales=sucursales, error=False, error_funciones=error_funciones, error_sucursales=error_sucursales)
 
 @main_bp.route("/perfil")
 def perfil():

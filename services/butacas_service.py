@@ -41,4 +41,3 @@ def agrupar_asientos_por_fila(asientos):
     }
 
     return mapa, estadisticas
-

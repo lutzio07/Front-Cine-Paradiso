@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}Servicios adicionales - Cine Paradiso{% endblock %}
+
+{% block content %}
+<section class="container">
+
+    <div class="stepper">
+        <div class="step done">
+            <span class="step-number">1</span>
+            <span>Butacas</span>
+        </div>
+
+        <div class="step-divider"></div>
+
+        <div class="step active">
+            <span class="step-number">2</span>
+            <span>Servicios</span>
+        </div>
+
+        <div class="step-divider"></div>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <span>Confirmación</span>
+        </div>
+    </div>
+
+    <div class="section-head">
+        <h1>Servicios adicionales</h1>
+        <p>Complementá tu experiencia cinematográfica eligiendo los servicios que quieras.</p>
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('main.confirmar_compra_route') }}">
+
+        <div class="seat-layout">
+
+            <div>
+
+                {% if error_servicios %}
+
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined">warning</span>
+                        <h3>Servicios temporalmente no disponibles</h3>
+                        <p>No pudimos cargar los servicios adicionales. Intentá nuevamente más tarde.</p>
+                    </div>
+
+                {% elif servicios %}
+
+                    <div class="service-list">
+
+                        {% for servicio in servicios %}
+
+                            <article class="service-card">
+
+                                <div class="service-icon">
+                                    <span class="material-symbols-outlined">
+                                        {% if servicio.tipo == 'ESTACIONAMIENTO' %}
+                                            local_parking
+                                        {% elif servicio.tipo == 'ACCESO_VIP' %}
+                                            star
+                                        {% elif servicio.tipo == 'COMIDA' %}
+                                            fastfood
+                                        {% elif servicio.tipo == 'BEBIDA' %}
+                                            local_drink
+                                        {% elif servicio.tipo == 'COMBO' %}
+                                            lunch_dining
+                                        {% else %}
+                                            confirmation_number
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <h3>{{ servicio.nombre }}</h3>
+
+                                    <p>
+                                        {{ servicio.descripcion or 'Servicio adicional de Cine Paradiso.' }}
+                                    </p>
+
+                                    <strong>
+                                        {{ servicio.precio | pesos }}
+                                    </strong>
+                                </div>
+
+                                <div class="service-control">
+                                    <input
+                                        type="number"
+                                        name="servicio_{{ servicio.id_servicio }}"
+                                        class="input service-qty"
+                                        value="0"
+                                        min="0"
+                                        max="10"
+                                        aria-label="Cantidad de {{ servicio.nombre }}"
+                                    >
+                                </div>
+
+                            </article>
+
+                        {% endfor %}
+
+                    </div>
+
+                {% else %}
+
+                    <div class="empty-state">
+                        <span class="material-symbols-outlined">room_service</span>
+                        <h3>No hay servicios disponibles</h3>
+                        <p>Podés continuar con tu compra sin servicios adicionales.</p>
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+            <aside class="card summary-card">
+
+                <h3>Resumen de tu selección</h3>
+
+                <div class="summary-line">
+                    <span>Función</span>
+                    <strong>#{{ id_funcion }}</strong>
+                </div>
+
+                <div class="summary-line">
+                    <span>Butacas</span>
+                    <strong>{{ asientos_ids | length }}</strong>
+                </div>
+
+                <div class="summary-line">
+                    <span>Unidades de servicios</span>
+                    <strong id="total-servicios">0</strong>
+                </div>
+
+                <p class="notice">
+                    Los precios de los servicios son informativos y serán calculados por el backend.
+                </p>
+
+                {% if not error_servicios %}
+                    <button type="submit" class="btn btn-primary btn-full">
+                        Continuar
+                    </button>
+                {% else %}
+                    <button type="button" class="btn btn-primary btn-full" disabled>
+                        Servicios no disponibles
+                    </button>
+                {% endif %}
+
+                <a href="{{ url_for('main.seleccionar_butacas', id_funcion=id_funcion) }}"
+                   class="btn btn-secondary btn-full">
+                    Volver a las butacas
+                </a>
+
+            </aside>
+
+        </div>
+
+    </form>
+
+</section>
+<script>
+    const camposServicios = document.querySelectorAll('.service-qty');
+    const totalServicios = document.getElementById('total-servicios');
+
+    function actualizarTotalServicios() {
+        let total = 0;
+
+        camposServicios.forEach(campo => {
+            total += parseInt(campo.value) || 0;
+        });
+
+        totalServicios.textContent = total;
+    }
+
+    camposServicios.forEach(campo => {
+        campo.addEventListener('input', actualizarTotalServicios);
+    });
+
+    actualizarTotalServicios();
+</script>
+{% endblock %}

@@ -11,14 +11,22 @@
 {% block content %}
 <section class="container detalle-pelicula">
     {% if error %}
-        <p class="empty-state">No pudimos conectar con el servidor.</p>
+        <p class="empty-state">No pudimos obtener la información de la película.</p>
         <a href="{{ url_for('main.index') }}" class="btn btn-quiet">Volver a la cartelera</a>
     {% elif not pelicula %}
         <p class="empty-state">No encontramos la película que estás buscando.</p>
         <a href="{{ url_for('main.index') }}" class="btn btn-quiet">Volver a la cartelera</a>
     {% else %}
     <div class="detalle-header">
-        <img src="{{ pelicula.poster_url if pelicula.poster_url else 'https://via.placeholder.com/300x450' }}" alt="{{ pelicula.titulo }}" class="movie-poster">
+        {% if pelicula.poster_url %}
+            <img src="{{ pelicula.poster_url }}"
+                alt="{{ pelicula.titulo }}"
+                class="movie-poster">
+        {% else %}
+            <div class="poster-fallback material-symbols-outlined">
+                movie
+            </div>
+        {% endif %}
 
         <div class="detalle-info">
             <h1 class="title-playfair">{{ pelicula.titulo }}</h1>
@@ -38,7 +46,10 @@
         <select name="id_sucursal" id="sucursal-select" class="select">
             <option value="">-- Todas las sucursales --</option>
             {% for sucursal in sucursales %}
-               <option {% if request.args.get('id_sucursal')|int == sucursal.id_sucursal %}selected{% endif %}>{{ sucursal.nombre }}</option>
+                <option value="{{ sucursal.id_sucursal }}"
+                    {% if request.args.get('id_sucursal')|int == sucursal.id_sucursal %}selected{% endif %}>
+                    {{ sucursal.nombre }}
+                </option>
             {% endfor %}
         </select>
     </div>
@@ -54,7 +65,21 @@
     </div>
     </form>
 
-    {% if funciones %}
+    {% if error_sucursales %}
+        <p class="empty-state">
+            No pudimos cargar las sucursales temporalmente.
+        </p>
+    {% endif %}
+
+    {% if error_funciones %}
+
+        <p class="empty-state">
+            Los horarios y funciones no están disponibles temporalmente.
+            Intentá nuevamente más tarde.
+        </p>
+
+    {% elif funciones %}
+
         <div class="funciones-lista">
             {% for f in funciones %}
                 <div class="funcion-card">
@@ -63,12 +88,20 @@
                     <p><strong>Sala:</strong> {{ f.nombre_sala }}</p>
                     <p><strong>Precio:</strong> ${{ f.precio_entrada|int }}</p>
 
-                    <a href="{{ url_for('main.seleccion_butacas', id_funcion=f.id_funcion) }}" class="btn btn-primary">Seleccionar butacas</a>
+                    <a href="{{ url_for('main.seleccion_butacas', id_funcion=f.id_funcion) }}"
+                        class="btn btn-primary">
+                        Seleccionar butacas
+                    </a>
                 </div>
             {% endfor %}
         </div>
+
     {% else %}
-    <p class="empty-state">No hay funciones disponibles para los filtros seleccionados.</p>
+
+        <p class="empty-state">
+            No hay funciones disponibles para los filtros seleccionados.
+        </p>
+
     {% endif %}
     {% endif %}
 </section>
