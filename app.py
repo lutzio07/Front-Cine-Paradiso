@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from config import get_config
 from routes.main_routes import main_bp
 from routes.auth_routes import auth_bp
@@ -25,6 +25,11 @@ def create_app():
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+
+    @app.errorhandler(404)
+    def pagina_no_encontrada(error):
+        return render_template("pages/404.html"), 404
+
     return app
 
 if __name__ == "__main__":

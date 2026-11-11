@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% set section = 'admin' %}
+{% set active = 'dashboard' %}
+{% block title %}Dashboard | Backoffice Cine Paradiso{% endblock %}
+{% macro pesos(valor) %}{{ ('$ {:,.2f}'.format(valor)).replace(',', 'X').replace('.', ',').replace('X', '.') }}{% endmacro %}
+{% macro barra(etiqueta, valor, maximo, texto) %}
+<div class="metric-bar">
+    <div><span>{{ etiqueta }}</span><strong>{{ texto }}</strong></div>
+    <div class="bar-track"><div class="bar-fill" data-width="{{ valor / maximo * 100 if maximo else 0 }}"></div></div>
+</div>
+{% endmacro %}
+{% macro tarjeta(etiqueta, valor, ayuda, error=none) %}
+<article class="stat-card">
+    <div class="stat-label">{{ etiqueta }}</div>
+    <div class="stat-value">{{ valor }}</div>
+    <span class="stat-hint">{{ ayuda }}</span>
+    {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+</article>
+{% endmacro %}
+{% block content %}
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Panel de control</span>
+        <h1>Estadísticas de Cine Paradiso</h1>
+        <p>Ocupación, ventas y cancelaciones informadas por el backend.</p>
+    </div>
+    <span class="badge badge-green"><span class="material-symbols-outlined">verified_user</span> ADMIN</span>
+</div>
+
+{% with mensajes = get_flashed_messages(with_categories=true) %}
+  {% for categoria, mensaje in mensajes %}
+    <div class="dashboard-aviso" role="alert">{{ mensaje }}</div>
+  {% endfor %}
+{% endwith %}
+
+<section class="four-cols" aria-label="Indicadores principales">
+    {{ tarjeta('Funciones informadas', ocupacion|length if ocupacion is not none else '—', 'Según filtros de ocupación', error_ocupacion) }}
+    {{ tarjeta('Entradas vendidas', ocupacion|sum(attribute='entradas_vendidas') if ocupacion is not none else '—', 'Según filtros de ocupación') }}
+    {{ tarjeta('Recaudación por géneros', pesos(ventas_por_genero|sum(attribute='total_ventas')) if ventas_por_genero is not none else '—', 'Estadística general', error_ventas) }}
+    {{ tarjeta('Compras canceladas', cancelaciones.total_cancelaciones if cancelaciones is not none else '—', 'Estadística general', error_cancelaciones) }}
+</section>
+
+<div class="chart-grid dashboard-section">
+    <section class="card">
+        <div class="card-header">
+            <h2>Ventas por género</h2>
+            <span class="material-symbols-outlined accent">leaderboard</span>
+        </div>
+        <div class="metric-bars">
+            {% if error_ventas %}
+                <p role="alert">{{ error_ventas }}</p>
+            {% elif not ventas_por_genero %}
+                <p class="muted">Sin datos de ventas disponibles.</p>
+            {% else %}
+                {% set maximo = ventas_por_genero|map(attribute='total_ventas')|max %}
+                {% for venta in ventas_por_genero %}
+                    {{ barra(venta.genero, venta.total_ventas, maximo, pesos(venta.total_ventas)) }}
+                {% endfor %}
+            {% endif %}
+        </div>
+    </section>
+    <section class="card">
+        <div class="card-header">
+            <h2>Franjas más vendidas</h2>
+            <span class="material-symbols-outlined accent">schedule</span>
+        </div>
+        <div class="metric-bars">
+            {% if error_franjas %}
+                <p role="alert">{{ error_franjas }}</p>
+            {% elif not franjas %}
+                <p class="muted">Sin datos de franjas horarias.</p>
+            {% else %}
+                {% set maximo = franjas|map(attribute='entradas_vendidas')|max %}
+                {% for franja in franjas %}
+                    {{ barra(franja.hora, franja.entradas_vendidas, maximo, franja.entradas_vendidas ~ ' entradas') }}
+                {% endfor %}
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<section class="card dashboard-section">
+    <div class="card-header">
+        <h2>Ocupación por función</h2>
+        <span class="badge badge-outline">Solo administradores</span>
+    </div>
+    <form class="form-grid dashboard-filters" method="get" action="{{ url_for('admin.dashboard') }}">
+        <div class="field">
+            <label for="id-pelicula">Película</label>
+            <select class="select" id="id-pelicula" name="id_pelicula">
+                <option value="">Todas las películas</option>
+                {% set seleccion_pelicula = namespace(encontrada=false) %}
+                {% for pelicula in peliculas|default([], true) if pelicula is mapping and pelicula.id_pelicula is defined and pelicula.titulo is defined %}
+                    <option value="{{ pelicula.id_pelicula }}" {% if filtros.get('id_pelicula')|string == pelicula.id_pelicula|string %}{% set seleccion_pelicula.encontrada = true %}selected{% endif %}>{{ pelicula.titulo }}</option>
+                {% endfor %}
+                {% if filtros.get('id_pelicula') and not seleccion_pelicula.encontrada %}
+                    <option value="{{ filtros.id_pelicula }}" selected>Película #{{ filtros.id_pelicula }}</option>
+                {% endif %}
+            </select>
+            {% if error_peliculas %}<p role="alert">No se pudieron cargar las películas. {{ error_peliculas }}</p>{% endif %}
+        </div>
+        <div class="field">
+            <label for="id-funcion">Función</label>
+            <select class="select" id="id-funcion" name="id_funcion">
+                <option value="">Todas las funciones</option>
+                {% set seleccion_funcion = namespace(encontrada=false) %}
+                {% for funcion in funciones|default([], true) if funcion is mapping and funcion.id_funcion is defined %}
+                    <option value="{{ funcion.id_funcion }}" {% if filtros.get('id_funcion')|string == funcion.id_funcion|string %}{% set seleccion_funcion.encontrada = true %}selected{% endif %}>
+                        #{{ funcion.id_funcion }} · {{ funcion.titulo_pelicula|default('Película #' ~ funcion.id_pelicula|default('—')) }} ·
+                        {{ funcion.nombre_sala|default('Sala #' ~ funcion.id_sala|default('—')) }} · {{ funcion.fecha_hora|default('Horario no disponible')|replace('T', ' ') }}
+                    </option>
+                {% endfor %}
+                {% if filtros.get('id_funcion') and not seleccion_funcion.encontrada %}
+                    <option value="{{ filtros.id_funcion }}" selected>Función #{{ filtros.id_funcion }}</option>
+                {% endif %}
+            </select>
+            {% if error_funciones %}<p role="alert">No se pudieron cargar las funciones. {{ error_funciones }}</p>{% endif %}
+        </div>
+        <div class="form-actions dashboard-actions">
+            <button class="btn btn-primary" type="submit">Filtrar ocupación</button>
+            <a class="btn btn-quiet" href="{{ url_for('admin.dashboard') }}">Limpiar filtros</a>
+        </div>
+    </form>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Película</th><th>Función</th><th>Sala</th><th>Capacidad</th><th>Entradas</th><th>Ocupación</th></tr></thead>
+            <tbody>
+                {% if error_ocupacion %}
+                    <tr><td colspan="6" role="alert">{{ error_ocupacion }}</td></tr>
+                {% else %}
+                    {% for fila in ocupacion or [] %}
+                        <tr>
+                            <td><strong>{{ fila.titulo_pelicula }}</strong></td>
+                            <td>#{{ fila.id_funcion }} · {{ fila.fecha_hora|replace('T', ' ') }}</td>
+                            <td>{{ fila.nombre_sala }}</td>
+                            <td>{{ fila.capacidad }}</td>
+                            <td>{{ fila.entradas_vendidas }}</td>
+                            <td><span class="badge {% if fila.porcentaje_ocupacion >= 80 %}badge-red{% endif %}">{{ fila.porcentaje_ocupacion|round(1) }}%</span></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="empty-state">No se encontraron funciones.</td></tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="dashboard-section">
+    <a class="btn btn-primary" href="{{ url_for('admin.reporte_pdf') }}">Descargar reporte PDF</a>
+</div>
+{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+{% endblock %}
