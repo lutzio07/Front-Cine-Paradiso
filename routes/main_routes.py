@@ -50,6 +50,7 @@ def seleccionar_servicios():
         error_servicios=error_servicios,
         id_funcion=compra_pendiente["id_funcion"],
         asientos_ids=compra_pendiente["asientos_ids"],
+        compra_actual=session.get("compra_actual", {}),
     )
 
 @main_bp.post("/compras/servicios")
@@ -139,6 +140,107 @@ def confirmar_compra_route():
 
     flash("¡Tu compra se realizó correctamente!", "success")
     return redirect(url_for("main.perfil"))
+
+@main_bp.route("/compras/confirmar", methods=["GET"])
+def vista_confirmacion():
+    if not session.get("backend_session"):
+        flash("Iniciá sesión para continuar con la compra.", "warning")
+        return redirect(url_for("auth.vista_login"))
+
+    compra_pendiente = session.get("compra_pendiente")
+    if not compra_pendiente:
+        flash("Primero tenés que seleccionar las butacas.", "warning")
+        return redirect(url_for("main.index"))
+
+    compra_actual = session.get("compra_actual", {})
+    servicios_seleccionados = session.get("servicios_seleccionados", [])
+
+    try:
+        catalogo_servicios = obtener_servicios()
+        precios_servicios = {s["id_servicio"]: s for s in catalogo_servicios}
+    except (RequestException, RuntimeError, ValueError):
+        precios_servicios = {}
+
+    servicios_con_detalle = []
+    subtotal_servicios = 0
+    for sv in servicios_seleccionados:
+        id_sv = sv["id_servicio"]
+        cant = sv["cantidad"]
+        info = precios_servicios.get(id_sv, {})
+        precio = float(info.get("precio", 0))
+        servicios_con_detalle.append({
+            "id_servicio": id_sv,
+            "nombre": info.get("nombre", f"Servicio #{id_sv}"),
+            "cantidad": cant,
+            "precio_unitario": precio,
+            "subtotal": precio * cant,
+        })
+        subtotal_servicios += precio * cant
+
+    subtotal_entradas = compra_actual.get("subtotal", 0)
+    monto_estimado = subtotal_entradas + subtotal_servicios
+
+    return render_template(
+        "pages/confirmacion_compra.html",
+        compra_actual=compra_actual,
+        compra_pendiente=compra_pendiente,
+        servicios=servicios_con_detalle,
+        subtotal_entradas=subtotal_entradas,
+        subtotal_servicios=subtotal_servicios,
+        monto_estimado=monto_estimado,
+    )
+
+
+@main_bp.route("/compras/confirmar", methods=["POST"])
+def confirmar_compra_desde_vista():
+    if not session.get("backend_session"):
+        flash("Iniciá sesión para continuar con la compra.", "warning")
+        return redirect(url_for("auth.vista_login"))
+
+    compra_pendiente = session.get("compra_pendiente")
+    if not compra_pendiente:
+        flash("No hay una selección de butacas pendiente.", "warning")
+        return redirect(url_for("main.index"))
+
+    servicios = session.get("servicios_seleccionados", [])
+
+    datos_compra = {
+        "id_funcion": compra_pendiente["id_funcion"],
+        "asientos_ids": compra_pendiente["asientos_ids"],
+        "servicios": servicios,
+    }
+
+    try:
+        respuesta = crear_compra(
+            datos_compra,
+            session["backend_session"],
+        )
+
+        if not isinstance(respuesta, dict):
+            raise ValueError("La respuesta del backend no es válida.")
+
+        if respuesta.get("status") != "success":
+            mensaje = respuesta.get("message", "No se pudo completar la compra.")
+            if "disponibilidad" in mensaje.lower() or "asiento" in mensaje.lower():
+                raise RuntimeError("disponibilidad")
+            raise RuntimeError(mensaje)
+
+        id_compra = respuesta["data"]["id_compra"]
+        session.pop("compra_pendiente", None)
+        session.pop("compra_actual", None)
+        session.pop("servicios_seleccionados", None)
+
+        flash("¡Tu compra se realizó correctamente!", "success")
+        return redirect(url_for("main.detalle_compra", id_compra=id_compra))
+
+    except (RequestException, RuntimeError, ValueError) as e:
+        mensaje = str(e)
+        if "disponibilidad" in mensaje.lower() or "asiento" in mensaje.lower():
+            flash("Algunas butacas ya no están disponibles. Elegí otras.", "warning")
+            session.pop("servicios_seleccionados", None)
+            return redirect(url_for("main.seleccion_butacas", id_funcion=compra_pendiente["id_funcion"]))
+        flash("No se pudo completar la compra. Intentá nuevamente.", "danger")
+        return redirect(url_for("main.vista_confirmacion"))
 
 @main_bp.route("/")
 def index():
