@@ -1,10 +1,146 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'base.html' %}
 
-</body>
-</html>
+{% block title %}Confirmar compra - Cine Paradiso{% endblock %}
+
+{% block content %}
+<section class="container">
+
+    <div class="stepper">
+        <div class="step done">
+            <span class="step-number">1</span>
+            <span>Butacas</span>
+        </div>
+
+        <div class="step-divider"></div>
+
+        <div class="step done">
+            <span class="step-number">2</span>
+            <span>Servicios</span>
+        </div>
+
+        <div class="step-divider"></div>
+
+        <div class="step active">
+            <span class="step-number">3</span>
+            <span>Confirmación</span>
+        </div>
+    </div>
+
+    <div class="section-head">
+        <h1>Confirmá tu compra</h1>
+        <p>Revisá todos los detalles antes de confirmar.</p>
+    </div>
+
+    <div class="stack">
+
+        <div class="card soft">
+
+            <h3>Detalle de la función</h3>
+
+            {% if compra_actual.get('titulo_pelicula') %}
+            <div class="summary-line">
+                <span>Película</span>
+                <strong>{{ compra_actual.titulo_pelicula }}</strong>
+            </div>
+            {% endif %}
+
+            {% if compra_actual.get('nombre_sucursal') or compra_actual.get('nombre_sala') %}
+            <div class="summary-line">
+                <span>Sucursal / Sala</span>
+                <strong>{{ compra_actual.nombre_sucursal or '' }} / {{ compra_actual.nombre_sala or '' }}</strong>
+            </div>
+            {% endif %}
+
+            {% if compra_actual.get('fecha_hora') %}
+            <div class="summary-line">
+                <span>Fecha y horario</span>
+                <strong>{{ compra_actual.fecha_hora | datetimeformat }}</strong>
+            </div>
+            {% endif %}
+
+            {% if compra_actual.get('asientos_etiquetas') %}
+            <div class="summary-line">
+                <span>Butacas</span>
+                <strong>{{ compra_actual.asientos_etiquetas | join(', ') }}</strong>
+            </div>
+            {% endif %}
+
+            <div class="summary-line">
+                <span>Cantidad de entradas</span>
+                <strong>{{ compra_pendiente.asientos_ids | length }}</strong>
+            </div>
+
+            <div class="summary-line">
+                <span>Subtotal entradas</span>
+                <strong>{{ subtotal_entradas | pesos }}</strong>
+            </div>
+
+        </div>
+
+        {% if servicios %}
+        <div class="card soft">
+
+            <h3>Servicios adicionales</h3>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Servicio</th>
+                            <th>Cantidad</th>
+                            <th>Precio unitario</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sv in servicios %}
+                        <tr>
+                            <td>{{ sv.nombre }}</td>
+                            <td>{{ sv.cantidad }}</td>
+                            <td>{{ sv.precio_unitario | pesos }}</td>
+                            <td>{{ sv.subtotal | pesos }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="summary-line">
+                <span>Subtotal servicios</span>
+                <strong>{{ subtotal_servicios | pesos }}</strong>
+            </div>
+
+        </div>
+        {% else %}
+        <p class="muted">No seleccionaste servicios adicionales.</p>
+        {% endif %}
+
+        <div class="card raised" style="text-align:center">
+
+            <h2>Monto estimado total</h2>
+            <p style="font-size:2em;margin:16px 0">{{ monto_estimado | pesos }}</p>
+
+            <p class="notice">
+                El monto final será calculado por el backend al confirmar la compra.
+            </p>
+
+            <form method="POST" action="{{ url_for('main.confirmar_compra_desde_vista') }}">
+                <button type="submit" class="btn btn-primary btn-full">
+                    Confirmar compra
+                </button>
+            </form>
+
+            <a href="{{ url_for('main.seleccionar_servicios') }}" class="btn btn-secondary btn-full">
+                Volver a servicios
+            </a>
+
+            <a href="{{ url_for('main.seleccion_butacas', id_funcion=compra_pendiente.id_funcion) }}" class="btn btn-secondary btn-full">
+                Volver a butacas
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+{% endblock %}
