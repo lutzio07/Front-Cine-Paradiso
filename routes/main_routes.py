@@ -53,94 +53,6 @@ def seleccionar_servicios():
         compra_actual=session.get("compra_actual", {}),
     )
 
-@main_bp.post("/compras/servicios")
-def confirmar_compra_route():
-    if not session.get("backend_session"):
-        flash("Iniciá sesión para continuar con la compra.", "warning")
-        return redirect(url_for("auth.vista_login"))
-
-    if session.get("rol") != "CLIENTE":
-        flash("Solo los clientes pueden realizar compras.", "danger")
-        return redirect(url_for("main.index"))
-
-    compra_pendiente = session.get("compra_pendiente")
-
-    if not compra_pendiente:
-        flash("No hay una selección de butacas pendiente.", "warning")
-        return redirect(url_for("main.index"))
-
-    try:
-        catalogo_servicios = obtener_servicios()
-    except (RequestException, RuntimeError, ValueError):
-        flash("No se pudieron verificar los servicios adicionales. Intentá nuevamente.", "danger")
-        return redirect(url_for("main.seleccionar_servicios"))
-
-    if not all(
-        isinstance(servicio, dict)
-        and type(servicio.get("id_servicio")) is int
-        and servicio["id_servicio"] > 0
-        for servicio in catalogo_servicios
-    ):
-        flash("El catálogo de servicios contiene datos inválidos.", "danger")
-        return redirect(url_for("main.seleccionar_servicios"))
-
-    ids_servicios_validos = {
-        servicio["id_servicio"]
-        for servicio in catalogo_servicios
-    }
-
-    servicios = []
-
-    try:
-        for campo, valor in request.form.items():
-            if not campo.startswith("servicio_"):
-                continue
-
-            id_servicio = int(campo.removeprefix("servicio_"))
-            cantidad = int(valor)
-
-            if id_servicio <= 0 or id_servicio not in ids_servicios_validos or cantidad < 0 or cantidad > 10:
-                raise ValueError
-
-            if cantidad > 0:
-                servicios.append({
-                    "id_servicio": id_servicio,
-                    "cantidad": cantidad,
-                })
-
-    except ValueError:
-        flash("Las cantidades de los servicios no son válidas.", "danger")
-        return redirect(url_for("main.seleccionar_servicios"))
-
-    datos_compra = {
-        "id_funcion": compra_pendiente["id_funcion"],
-        "asientos_ids": compra_pendiente["asientos_ids"],
-        "servicios": servicios,
-    }
-
-    try:
-        respuesta = crear_compra(
-            datos_compra,
-            session["backend_session"],
-        )
-
-        if not isinstance(respuesta, dict):
-            raise ValueError("La respuesta del backend no es válida.")
-
-        if respuesta.get("status") != "success":
-            raise RuntimeError(
-                respuesta.get("message", "No se pudo completar la compra.")
-            )
-
-    except (RequestException, RuntimeError, ValueError):
-        flash("No se pudo completar la compra. Intentá nuevamente.", "danger")
-        return redirect(url_for("main.seleccionar_servicios"))
-
-    session.pop("compra_pendiente", None)
-
-    flash("¡Tu compra se realizó correctamente!", "success")
-    return redirect(url_for("main.perfil"))
-
 @main_bp.route("/compras/confirmar", methods=["GET"])
 def vista_confirmacion():
     if not session.get("backend_session"):
@@ -191,6 +103,66 @@ def vista_confirmacion():
     )
 
 
+@main_bp.post("/compras/servicios")
+def guardar_servicios_y_confirmar():
+    if not session.get("backend_session"):
+        flash("Iniciá sesión para continuar con la compra.", "warning")
+        return redirect(url_for("auth.vista_login"))
+
+    compra_pendiente = session.get("compra_pendiente")
+    if not compra_pendiente:
+        flash("No hay una selección de butacas pendiente.", "warning")
+        return redirect(url_for("main.index"))
+
+    try:
+        catalogo_servicios = obtener_servicios()
+    except (RequestException, RuntimeError, ValueError):
+        flash("No se pudieron verificar los servicios adicionales. Intentá nuevamente.", "danger")
+        return redirect(url_for("main.seleccionar_servicios"))
+
+    if not all(
+        isinstance(servicio, dict)
+        and type(servicio.get("id_servicio")) is int
+        and servicio["id_servicio"] > 0
+        for servicio in catalogo_servicios
+    ):
+        flash("El catálogo de servicios contiene datos inválidos.", "danger")
+        return redirect(url_for("main.seleccionar_servicios"))
+
+    ids_servicios_validos = {
+        servicio["id_servicio"]
+        for servicio in catalogo_servicios
+    }
+
+    servicios = []
+
+    try:
+        for campo, valor in request.form.items():
+            if not campo.startswith("servicio_"):
+                continue
+
+            id_servicio = int(campo.removeprefix("servicio_"))
+            cantidad = int(valor)
+
+            if id_servicio <= 0 or id_servicio not in ids_servicios_validos or cantidad < 0 or cantidad > 10:
+                raise ValueError
+
+            if cantidad > 0:
+                servicios.append({
+                    "id_servicio": id_servicio,
+                    "cantidad": cantidad,
+                })
+
+    except ValueError:
+        flash("Las cantidades de los servicios no son válidas.", "danger")
+        return redirect(url_for("main.seleccionar_servicios"))
+
+    session["servicios_seleccionados"] = servicios
+
+    flash("Servicios guardados correctamente.", "success")
+    return redirect(url_for("main.vista_confirmacion"))
+
+
 @main_bp.route("/compras/confirmar", methods=["POST"])
 def confirmar_compra_desde_vista():
     if not session.get("backend_session"):
@@ -211,21 +183,19 @@ def confirmar_compra_desde_vista():
     }
 
     try:
-        respuesta = crear_compra(
+        data = crear_compra(
             datos_compra,
             session["backend_session"],
         )
 
-        if not isinstance(respuesta, dict):
+        if not isinstance(data, dict):
             raise ValueError("La respuesta del backend no es válida.")
 
-        if respuesta.get("status") != "success":
-            mensaje = respuesta.get("message", "No se pudo completar la compra.")
-            if "disponibilidad" in mensaje.lower() or "asiento" in mensaje.lower():
-                raise RuntimeError("disponibilidad")
-            raise RuntimeError(mensaje)
-
-        id_compra = respuesta["data"]["id_compra"]
+        # El backend puede devolver el id directamente o anidado en "compra"
+        compra_obj = data.get("compra", data)
+        id_compra = compra_obj.get("id_compra")
+        if id_compra is None:
+            raise ValueError("El backend no devolvió un id_compra válido.")
         session.pop("compra_pendiente", None)
         session.pop("compra_actual", None)
         session.pop("servicios_seleccionados", None)
