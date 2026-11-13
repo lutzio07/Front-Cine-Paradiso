@@ -426,7 +426,7 @@ def eliminar_funcion(id_funcion):
     return redirect(url_for("admin.peliculas"))
 
 
-@admin_bp.route("/peliculas/importar", methods=["POST"], endpoint="importar_pelicula")
+@admin_bp.route("/peliculas", methods=["POST"], endpoint="importar_pelicula")
 def importar_pelicula():
 
     if not es_admin():
