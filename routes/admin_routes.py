@@ -12,10 +12,12 @@ from flask import (
 )
 
 from services.admin_service import (
+    buscar_peliculas_tmdb as servicio_buscar_peliculas_tmdb,
     crear_funcion as servicio_crear_funcion,
     crear_sala as servicio_crear_sala,
     eliminar_funcion as servicio_eliminar_funcion,
     eliminar_sala as servicio_eliminar_sala,
+    importar_pelicula as servicio_importar_pelicula,
     obtener_datos_backoffice_peliculas,
     obtener_servicios,
 )
@@ -72,6 +74,19 @@ def peliculas():
         obtener_datos_backoffice_peliculas()
     )
 
+    busqueda_tmdb = request.args.get("busqueda_tmdb", "").strip()
+    resultados_tmdb = []
+    if busqueda_tmdb:
+        resultados_tmdb, error_tmdb = servicio_buscar_peliculas_tmdb(busqueda_tmdb)
+        if error_tmdb:
+            flash(error_tmdb, "error")
+
+    titulos_catalogo = {
+        p.get("titulo", "").strip().lower()
+        for p in peliculas_list
+        if isinstance(p, dict) and p.get("titulo")
+    }
+
     return render_template(
         "pages/admin_cargar_pelicula.html",
         section="admin",
@@ -80,6 +95,9 @@ def peliculas():
         salas=salas,
         peliculas=peliculas_list,
         funciones=funciones,
+        busqueda_tmdb=busqueda_tmdb,
+        resultados_tmdb=resultados_tmdb,
+        titulos_catalogo=titulos_catalogo,
     )
 
 
@@ -404,5 +422,54 @@ def eliminar_funcion(id_funcion):
         flash(mensaje, "success")
     else:
         flash(mensaje, "error")
+
+    return redirect(url_for("admin.peliculas"))
+
+
+@admin_bp.route("/peliculas/importar", methods=["POST"], endpoint="importar_pelicula")
+def importar_pelicula():
+
+    if not es_admin():
+        flash("Acceso no autorizado.", "error")
+        return redirect(url_for("auth.vista_login"))
+
+    if not session.get("backend_session"):
+        flash(
+            "Falta la sesión del backend. Iniciá sesión nuevamente.",
+            "error"
+        )
+        return redirect(url_for("admin.peliculas"))
+
+    titulo = request.form.get("titulo", "").strip()
+    if not titulo:
+        flash("El título de la película es obligatorio.", "error")
+        return redirect(url_for("admin.peliculas"))
+
+    try:
+        duracion_min = int(request.form.get("duracion_min", 120))
+        if duracion_min <= 0:
+            duracion_min = 120
+    except (ValueError, TypeError):
+        duracion_min = 120
+
+    payload = {
+        "titulo": titulo,
+        "sinopsis": request.form.get("sinopsis", "").strip() or None,
+        "poster_url": request.form.get("poster_url", "").strip() or None,
+        "genero": request.form.get("genero", "").strip() or "General",
+        "duracion_min": duracion_min,
+        "clasificacion": request.form.get("clasificacion", "").strip() or "ATP",
+    }
+
+    exito, mensaje = servicio_importar_pelicula(payload)
+
+    if exito:
+        flash(mensaje, "success")
+    else:
+        flash(mensaje, "error")
+
+    busqueda_actual = request.form.get("busqueda_tmdb", "").strip()
+    if busqueda_actual:
+        return redirect(url_for("admin.peliculas", busqueda_tmdb=busqueda_actual))
 
     return redirect(url_for("admin.peliculas"))
