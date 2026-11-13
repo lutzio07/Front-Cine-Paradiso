@@ -1,0 +1,111 @@
+<section class="card">
+    <div class="card-header">
+        <h2>A. Importar Película (TMDb)</h2>
+        <span class="badge badge-outline">Catálogo TMDb</span>
+    </div>
+
+    <form action="{{ url_for('admin.peliculas') }}" method="get" class="stack tmdb-search-form">
+        <div class="field">
+            <label for="busqueda-tmdb">Buscar por título en TMDb</label>
+            <div class="input-row">
+                <input class="input" 
+                       id="busqueda-tmdb" 
+                       name="busqueda_tmdb" 
+                       value="{{ busqueda_tmdb|default('') }}" 
+                       placeholder="Ej.: Inception, Interstellar, Titanic, Gladiator..." 
+                       maxlength="120" 
+                       required>
+                <button class="btn btn-primary" type="submit" title="Buscar en TMDb">
+                    <span class="material-symbols-outlined">search</span>
+                    Buscar
+                </button>
+                {% if busqueda_tmdb %}
+                    <a href="{{ url_for('admin.peliculas') }}" class="btn btn-quiet" title="Limpiar búsqueda">
+                        <span class="material-symbols-outlined">close</span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+
+    {% if busqueda_tmdb %}
+        <div class="divider" style="margin: 16px 0 14px;"></div>
+        <div class="section-head" style="margin-bottom: 12px;">
+            <div>
+                <span class="eyebrow" style="font-size: 0.72rem;">Resultados para "{{ busqueda_tmdb }}"</span>
+            </div>
+            <span class="badge badge-outline">{{ resultados_tmdb|length }} encontrados</span>
+        </div>
+
+        {% if resultados_tmdb %}
+            <div class="tmdb-results-list">
+                {% for peli_ext in resultados_tmdb %}
+                    {% set ya_importada = (peli_ext.titulo|lower|trim in titulos_catalogo|default([])) %}
+                    <article class="tmdb-card-item">
+                        {% if peli_ext.poster_url %}
+                            <img src="{{ peli_ext.poster_url }}" 
+                                 alt="Póster de {{ peli_ext.titulo }}" 
+                                 class="tmdb-poster" 
+                                 loading="lazy">
+                        {% else %}
+                            <div class="tmdb-poster-fallback">
+                                <span class="material-symbols-outlined">movie</span>
+                            </div>
+                        {% endif %}
+
+                        <div class="tmdb-info">
+                            <div class="tmdb-title-row">
+                                <span class="tmdb-title">{{ peli_ext.titulo }}</span>
+                                {% if peli_ext.anio %}
+                                    <span class="tmdb-year">({{ peli_ext.anio }})</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="tmdb-meta-row">
+                                <span class="badge">{{ peli_ext.genero|default('General') }}</span>
+                                <span class="badge">{{ peli_ext.duracion_min|default(120) }} min</span>
+                                <span class="badge badge-red">{{ peli_ext.clasificacion|default('ATP') }}</span>
+                            </div>
+
+                            <p class="tmdb-synopsis">
+                                {{ peli_ext.sinopsis|default('Sin sinopsis provista por TMDb.', true) }}
+                            </p>
+                        </div>
+
+                        <div class="tmdb-action">
+                            {% if ya_importada %}
+                                <span class="badge badge-green" title="Esta película ya forma parte del catálogo">
+                                    <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                                    En catálogo
+                                </span>
+                            {% else %}
+                                <form action="{{ url_for('admin.importar_pelicula') }}" method="post" style="margin: 0;">
+                                    <input type="hidden" name="titulo" value="{{ peli_ext.titulo }}">
+                                    <input type="hidden" name="sinopsis" value="{{ peli_ext.sinopsis|default('') }}">
+                                    <input type="hidden" name="poster_url" value="{{ peli_ext.poster_url|default('') }}">
+                                    <input type="hidden" name="genero" value="{{ peli_ext.genero|default('General') }}">
+                                    <input type="hidden" name="duracion_min" value="{{ peli_ext.duracion_min|default(120) }}">
+                                    <input type="hidden" name="clasificacion" value="{{ peli_ext.clasificacion|default('ATP') }}">
+                                    <input type="hidden" name="busqueda_tmdb" value="{{ busqueda_tmdb }}">
+                                    <button class="btn btn-primary btn-small" type="submit" title="Importar al catálogo">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
+                                        Importar
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state" style="padding: 16px; text-align: center; color: var(--muted); background: var(--surface); border-radius: 8px;">
+                No se encontraron películas en TMDb con ese término. Probá con otro título.
+            </div>
+        {% endif %}
+    {% else %}
+        <p class="muted" style="margin: 12px 0 0; font-size: 0.82rem;">
+            Consultá la base de datos de TMDb para incorporar películas al catálogo local y habilitarlas para programar funciones.
+        </p>
+    {% endif %}
+</section>
+
