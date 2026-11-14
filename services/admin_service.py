@@ -160,7 +160,7 @@ def validar_codigo_qr(codigo_qr, id_funcion):
         cookies = _get_backend_cookies()
         payload = {"id_funcion": id_funcion}
 
-        response = requests.patch(url, json=payload, headers=headers, cookies=cookies)
+        response = requests.patch(url, json=payload, headers=headers, cookies=cookies, timeout=10)
 
         if response.status_code == 200:
             data = response.json()
