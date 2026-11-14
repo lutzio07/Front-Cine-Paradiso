@@ -43,8 +43,11 @@
   <a href="/">Cartelera</a>
   <a href="/perfil">Mi perfil y entradas</a>
 
+  {% set rol_directo = session.get('rol') or session.get('role') %}
   {% set usr = session.get('usuario') or session.get('user') or session.get('user_info') %}
-  {% if usr and (usr.get('rol')|default('')|lower in ['admin', 'administrador'] or session.get('rol')|default('')|lower in ['admin', 'administrador']) %}
+  {% set rol_usr = usr.get('rol') if usr is mapping else '' %}
+
+  {% if (rol_directo|default('')|lower in ['admin', 'administrador']) or (rol_usr|default('')|lower in ['admin', 'administrador']) %}
     <a href="{{ url_for('admin.peliculas') }}" style="color: #e50914; font-weight: bold;">Backoffice</a>
   {% endif %}
       </nav>
