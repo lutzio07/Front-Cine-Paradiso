@@ -1,0 +1,8 @@
+.profile-banner { display: flex; gap: 25px; align-items: center; padding: 28px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 15px; margin-bottom: 28px; }
+.profile-purchase-actions { flex-wrap: wrap; }
+.profile-avatar { width: 83px; height: 83px; border-radius: 50%; display: grid; place-items: center; background: #4c2225; color: #e18f93; font: 700 2rem Outfit,sans-serif; }
+
+@media (max-width: 620px) {
+  .profile-banner { flex-wrap: wrap; }
+  .profile-purchase-header { align-items: flex-start; flex-direction: column; }
+}
