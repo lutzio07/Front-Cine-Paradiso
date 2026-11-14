@@ -1,5 +1,3 @@
-from logging import exception
-
 import requests
 from flask import current_app, session
 
