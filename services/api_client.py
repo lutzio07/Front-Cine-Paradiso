@@ -169,3 +169,46 @@ def obtener_asientos_por_funcion(id_funcion):
     if not isinstance(asientos, list):
         raise ValueError("La respuesta del backend no contiene una lista de asientos")
     return asientos
+
+def obtener_resenas(id_pelicula):
+    response = get(f"/peliculas/{id_pelicula}/resenas")
+
+    if response.get("status") != "success":
+        raise RuntimeError(
+            response.get("message", "No se pudieron obtener las reseñas")
+        )
+
+    resenas = response.get("data")
+
+    if not isinstance(resenas, list):
+        raise ValueError("La respuesta del backend no contiene una lista de reseñas")
+
+    return resenas
+
+
+def crear_resena(id_pelicula, puntuacion, comentario, cookie_backend):
+    cuerpo = {"puntuacion": puntuacion}
+    if comentario:
+        cuerpo["comentario"] = comentario
+
+    try:
+        response = requests.post(
+            f"{_backend_url()}/peliculas/{id_pelicula}/resenas",
+            json=cuerpo,
+            cookies={"session": cookie_backend},
+            timeout=5,
+        )
+        try:
+            datos = response.json()
+        except ValueError:
+            datos = {}
+        if not isinstance(datos, dict):
+            datos = {}
+
+        if response.status_code == 201 and datos.get("status") == "success":
+            return True, "¡Gracias por tu reseña!"
+        return False, datos.get(
+            "message", "No se pudo publicar la reseña. Intentá nuevamente."
+        )
+    except requests.RequestException:
+        return False, "No se pudo conectar con el Backend para publicar la reseña."
