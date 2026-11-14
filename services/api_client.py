@@ -146,7 +146,10 @@ def crear_compra(datos, cookie_backend):
 
     response.raise_for_status()
 
-    return respuesta
+    if respuesta.get("status") != "success":
+        raise RuntimeError(respuesta.get("message", "No se pudo crear la compra."))
+
+    return respuesta.get("data")
 
 
 def obtener_funcion_por_id(id_funcion):
