@@ -1,3 +1,5 @@
+from logging import exception
+
 import requests
 from flask import current_app, session
 
@@ -150,3 +152,36 @@ def eliminar_funcion(id_funcion):
 def obtener_servicios():
     servicioslist,  = consultar_lista("/servicios", "servicios")
     return servicios_list
+
+def validar_codigo_qr(codigo_qr, id_funcion):
+    try:
+        url = f"{_backend_url()}/codigos-qr/{codigo_qr}"
+        headers = _get_auth_headers()
+        cookies = _get_backend_cookies()
+        payload = {"id_funcion": id_funcion}
+
+        response = requests.patch(url, json=payload, headers=headers, cookies=cookies)
+
+        if response.status_code == 200:
+            data = response.json()
+            return (True, "Acceso permitido", data)
+        elif response.status_code == 400:
+            error = _extraer_error(response, "Codigo QR invalido")
+            return (False, error, None)
+        elif response.status_code == 403:
+            error = _extraer_error(response, "Codigo QR ya utilizado")
+            return (False, error, None)
+        elif response.status_code == 404:
+            return (False, "Código QR no encontrado", None)
+        elif response.status_code == 409:
+            error = _extraer_error(response, "Codigo ya usado o no valido para esta funcion")
+            return (False, error, None)
+        else:
+            error = _extraer_error(response, "Error al validar el codigo QR")
+            return (False, error, None)
+
+    except requests.exceptions.ConnectionError:
+        return (False, "No se pudo conectar con el servidor", None)
+
+    except Exception as e:
+        return (False, f"Error inesperado: {str(e)}", None)
