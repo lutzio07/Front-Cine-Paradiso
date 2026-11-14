@@ -68,7 +68,7 @@
                 <option value="">-- Seleccioná una función --</option>
                 {% for func in funciones %}
                 <option value="{{ func.id_funcion }}">
-                    {{ func.titulo_pelicula | default('Película #' ~ func.id_pelicula) }} — {{ func.nombre_sala | default('Sala #' ~ func.id_sala) }} — {{ func.fecha_hora }}
+                    {{ func.titulo_pelicula | default('Película #' ~ func.id_pelicula) }} — {{ func.nombre_sala | default('Sala #' ~ func.id_sala) }} — {{ func.fecha_hora|datetimeformat }}
                 </option>
                 {% endfor %}
             </select>
