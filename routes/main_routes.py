@@ -10,6 +10,8 @@ from services.api_client import (
     obtener_sucursales,
     obtener_servicios,
     crear_compra,
+    obtener_resenas,
+    crear_resena,
 )
 from services.butacas_service import agrupar_asientos_por_fila
 from services.cartelera_service import armar_cartelera
@@ -200,9 +202,11 @@ def pelicula_detalle(id_pelicula):
     pelicula = None
     funciones = []
     sucursales = []
+    resenas = []
     error = False
     error_funciones = False
     error_sucursales = False
+    error_resenas = False
 
     try:
         pelicula = obtener_pelicula_por_id(id_pelicula=id_pelicula)
@@ -245,7 +249,32 @@ def pelicula_detalle(id_pelicula):
     except (RequestException, RuntimeError, ValueError):
         error_sucursales = True
 
-    return render_template("pages/pelicula_detalle.html", pelicula=pelicula, funciones=funciones, sucursales=sucursales, error=False, error_funciones=error_funciones, error_sucursales=error_sucursales)
+    try:
+        resenas = obtener_resenas(id_pelicula)
+    except (RequestException, RuntimeError, ValueError):
+        error_resenas = True
+
+    return render_template("pages/pelicula_detalle.html", pelicula=pelicula, funciones=funciones, sucursales=sucursales, resenas=resenas, error=False, error_funciones=error_funciones, error_sucursales=error_sucursales, error_resenas=error_resenas)
+
+@main_bp.route("/pelicula/<int:id_pelicula>/resenas", methods=["POST"])
+def publicar_resena(id_pelicula):
+    volver = url_for("main.pelicula_detalle", id_pelicula=id_pelicula, _anchor="resenas")
+
+    cookie_backend = session.get("backend_session")
+    if not cookie_backend:
+        flash("Iniciá sesión para dejar una reseña.", "warning")
+        return redirect(url_for("auth.vista_login"))
+
+    puntuacion = request.form.get("puntuacion", type=int)
+    comentario = request.form.get("comentario", "").strip()
+
+    if puntuacion is None:
+        flash("Elegí una puntuación de 1 a 5.", "warning")
+        return redirect(volver)
+
+    ok, mensaje = crear_resena(id_pelicula, puntuacion, comentario, cookie_backend)
+    flash(mensaje, "success" if ok else "danger")
+    return redirect(volver)
 
 @main_bp.route("/perfil")
 def perfil():
