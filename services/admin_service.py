@@ -147,9 +147,64 @@ def eliminar_funcion(id_funcion):
     except requests.RequestException:
         return False, "No se pudo conectar con el backend para eliminar la función."
 
+
+def buscar_peliculas_tmdb(texto_busqueda):
+    if not texto_busqueda or not texto_busqueda.strip():
+        return [], "Ingresá un título o palabra clave para buscar en TMDb."
+
+    try:
+        respuesta = requests.get(
+            f"{_backend_url()}/peliculas-externas",
+            params={"q": texto_busqueda.strip()},
+            headers=_get_auth_headers(),
+            cookies=_get_backend_cookies(),
+            timeout=10,
+        )
+
+        if not respuesta.ok:
+            return [], _extraer_error(respuesta, "No fue posible consultar TMDb.")
+
+        cuerpo = respuesta.json()
+        datos = cuerpo.get("data") if isinstance(cuerpo, dict) else None
+
+        if not isinstance(datos, list):
+            return [], "La respuesta de TMDb no contiene un listado válido."
+
+        return datos, None
+
+    except requests.RequestException as error:
+        current_app.logger.warning("Fallo consultando TMDb: %s", error)
+        return [], "Error de conexión al consultar TMDb. Verificá que el backend esté activo."
+
+
+def importar_pelicula(payload):
+    try:
+        respuesta = requests.post(
+            f"{_backend_url()}/peliculas",
+            json=payload,
+            headers=_get_auth_headers(),
+            cookies=_get_backend_cookies(),
+            timeout=10,
+        )
+
+        if respuesta.status_code == 201:
+            titulo = payload.get("titulo", "Película")
+            return True, f"Película '{titulo}' importada exitosamente al catálogo."
+
+        if respuesta.status_code == 409:
+            titulo = payload.get("titulo", "Película")
+            return False, f"La película '{titulo}' ya se encuentra registrada en el catálogo."
+
+        return False, f"Error {respuesta.status_code}: {_extraer_error(respuesta, 'No se pudo importar la película.')}"
+
+    except requests.RequestException:
+        return False, "No se pudo conectar con el backend para importar la película."
+
+
 def obtener_servicios():
-    servicioslist,  = consultar_lista("/servicios", "servicios")
+    servicios_list, _ = consultar_lista("/servicios", "servicios")
     return servicios_list
+
 
 def validar_codigo_qr(codigo_qr, id_funcion):
     try:
