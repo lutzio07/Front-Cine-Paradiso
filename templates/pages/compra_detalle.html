@@ -10,6 +10,18 @@
     </div>
 
     <div class="stack">
+        {% if funcion %}
+        <section class="card soft">
+            <p class="eyebrow">Tu función</p>
+            <h2>{{ funcion.titulo_pelicula }}</h2>
+            <p class="muted">{{ funcion.nombre_sucursal }} · {{ funcion.nombre_sala }}</p>
+            <p><strong>{{ funcion.fecha_hora|datetimeformat("%d/%m/%Y %H:%M") }}</strong> · {{ funcion.duracion_min }} min</p>
+            <p>Butacas:
+                {% for entrada in entradas %}{{ entrada.fila }}{{ entrada.numero }}{% if not loop.last %}, {% endif %}{% endfor %}
+            </p>
+        </section>
+        {% endif %}
+
         <section class="card raised" style="text-align:center">
             <h2>Tu código QR</h2>
             {% if qr %}
@@ -44,7 +56,7 @@
                     <tbody>
                         {% for entrada in entradas %}
                         <tr>
-                            <td>Función #{{ entrada.id_funcion }}</td>
+                            <td>{{ funcion.titulo_pelicula if funcion else "Función #" ~ entrada.id_funcion }}</td>
                             <td>{{ entrada.fila }}{{ entrada.numero }}</td>
                             <td>{{ entrada.precio|pesos }}</td>
                         </tr>
