@@ -152,17 +152,26 @@ def index():
     cartelera = []
     error = False
     error_funciones = False
+    error_sucursales = False
 
     try:
-        peliculas = obtener_peliculas(genero=genero)
-        generos = sorted(set(
-            p["genero"] for p in peliculas
-            if "genero" in p and p["genero"]
-        ))
-        sucursales = obtener_sucursales()
-
+        catalogo = obtener_peliculas()
+        generos = sorted({
+            pelicula.get("genero")
+            for pelicula in catalogo
+            if isinstance(pelicula, dict) and pelicula.get("genero")
+        })
+        peliculas = [
+            pelicula for pelicula in catalogo
+            if not genero or pelicula.get("genero") == genero
+        ]
     except (RequestException, RuntimeError, ValueError):
         error = True
+
+    try:
+        sucursales = obtener_sucursales()
+    except (RequestException, RuntimeError, ValueError):
+        error_sucursales = True
 
     if not error:
         try:
@@ -179,8 +188,8 @@ def index():
         except (RequestException, RuntimeError, ValueError):
             error_funciones = True
             cartelera = [
-                {**p, "con_funciones": False}
-                for p in peliculas
+                {**pelicula, "con_funciones": False}
+                for pelicula in peliculas
             ]
 
     return render_template(
@@ -189,6 +198,7 @@ def index():
         generos_disponibles=generos,
         error=error,
         error_funciones=error_funciones,
+        error_sucursales=error_sucursales,
         sucursales=sucursales,
     )
 
