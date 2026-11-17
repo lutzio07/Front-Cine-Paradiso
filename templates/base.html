@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Material+Symbols+Outlined&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/flash_messages.css') }}">
   {% block styles %}{% endblock %}
 </head>
 <body class="{% if section|default('public') == 'admin' %}admin-mode{% else %}public-mode{% endif %}">
@@ -51,6 +52,17 @@
 
   <!-- CONTENIDO PRINCIPAL -->
   <main id="contenido" class="page-content {% if section|default('public') == 'admin' %}admin-content{% endif %}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}" role="alert">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
   </main>
 

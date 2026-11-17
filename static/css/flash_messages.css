@@ -1,0 +1,33 @@
+/* 
+   Estilos para los mensajes que se muestran al usuario.
+   Permiten mostrar notificaciones al usuario después de realizar una acción,
+   como confirmar una compra o informar que una butaca ya está ocupada.
+   Cada categoría tiene colores diferentes para identificar el tipo de mensaje:
+   success (éxito), warning (advertencia) y danger (error).
+*/
+.flash-messages {
+    width: min(90%, 800px);
+    margin: 20px auto;
+}
+
+.flash-message {
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.flash-success {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.flash-warning {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.flash-danger {
+    background-color: #f8d7da;
+    color: #842029;
+}

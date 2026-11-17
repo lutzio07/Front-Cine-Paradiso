@@ -14,7 +14,7 @@ from services.api_client import (
 from services.butacas_service import agrupar_asientos_por_fila
 from services.cartelera_service import armar_cartelera
 from datetime import datetime
-from requests.exceptions import RequestException
+from requests.exceptions import HTTPError, RequestException
 from services.perfil_service import obtener_perfil
 from services.compras_service import obtener_detalle_compra
 from services.qr_service import generar_qr_data_url
@@ -130,6 +130,24 @@ def confirmar_compra_route():
             raise RuntimeError(
                 respuesta.get("message", "No se pudo completar la compra.")
             )
+
+    except HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 409:
+            id_funcion = compra_pendiente["id_funcion"]
+
+            session.pop("compra_pendiente", None)
+            session.pop("compra_actual", None)
+
+            flash(
+                "Una o más butacas ya no están disponibles. Seleccioná nuevamente.",
+                "warning",
+            )
+            return redirect(
+                url_for("main.seleccion_butacas", id_funcion=id_funcion)
+            )
+
+        flash("No se pudo completar la compra. Intentá nuevamente.", "danger")
+        return redirect(url_for("main.seleccionar_servicios"))
 
     except (RequestException, RuntimeError, ValueError):
         flash("No se pudo completar la compra. Intentá nuevamente.", "danger")
