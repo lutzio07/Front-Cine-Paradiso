@@ -314,6 +314,14 @@ def detalle_compra(id_compra):
         return redirect(url_for("main.perfil"))
 
     compra = detalle["compra"]
+    # La película es un dato extra: si falla, el QR se muestra igual.
+    funcion = None
+    if detalle["entradas"]:
+        try:
+            funcion = obtener_funcion_por_id(detalle["entradas"][0]["id_funcion"])
+        except (RequestException, RuntimeError, ValueError, KeyError):
+            funcion = None
+
     qr = None
     # Solo se muestra el QR si la compra sigue pendiente de uso.
     if compra.get("codigo_qr") and compra.get("estado_qr") == "PENDIENTE":
@@ -325,6 +333,7 @@ def detalle_compra(id_compra):
         entradas=detalle["entradas"],
         servicios=detalle["servicios"],
         qr=qr,
+        funcion=funcion,
     )
 
 
