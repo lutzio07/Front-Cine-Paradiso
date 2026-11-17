@@ -517,8 +517,6 @@ def eliminar_funcion(id_funcion):
     return redirect(url_for("admin.peliculas"))
 
 
-
-
 @admin_bp.route("/peliculas", methods=["POST"], endpoint="importar_pelicula")
 def importar_pelicula():
 

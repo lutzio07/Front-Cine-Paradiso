@@ -86,42 +86,49 @@
     <!-- Mensaje de error del QR -->
     <div id="qr-resumen-error" class="qr-resumen-error"></div>
 
-
-    <form method="POST" action="/admin/validador" style="display:flex;flex-direction:column;gap:18px">
-        <div>
-            <label for="codigo_qr" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
-                Código QR
-            </label>
-            <input
-                type="text"
-                class="form-control"
-                id="codigo_qr"
-                name="codigo_qr"
-                placeholder="Ingresá o escaneá el código QR"
-                autocomplete="off"
-                autofocus
-                style="font-size:1.2rem;padding:12px"
-            >
-        </div>
-
-        <div>
-            <label for="id_funcion" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
-                Función
-            </label>
-            <select class="form-select" id="id_funcion" name="id_funcion" required style="font-size:1.1rem;padding:10px">
-                <option value="">-- Seleccioná una función --</option>
-                {% for func in funciones %}
-                <option value="{{ func.id_funcion }}">
-                    {{ func.titulo_pelicula | default('Película #' ~ func.id_pelicula) }} — {{ func.nombre_sala | default('Sala #' ~ func.id_sala) }} — {{ func.fecha_hora|datetimeformat }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <button type="submit" class="btn btn-primary" style="font-size:1.1rem;padding:12px">
-            Validar acceso
+    <!-- Rellenar manualmente -->
+    <div class="manual-input-accordion">
+        <button type="button" class="accordion-toggle" id="btn-manual">
+            <span class="accordion-title">COMPLETAR MANUALMENTE</span>
+            <span class="accordion-icon material-symbols-outlined">expand_more</span>
         </button>
-    </form>
+        <div class="accordion-content" id="accordion-content">
+            <form method="POST" action="/admin/validador" id="form-validador" style="display:flex;flex-direction:column;gap:18px">
+                <div>
+                    <label for="codigo_qr" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
+                        Código QR
+                    </label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="codigo_qr"
+                        name="codigo_qr"
+                        placeholder="Ingresá o escaneá el código QR"
+                        autocomplete="off"
+                        style="font-size:1.2rem;padding:12px"
+                    >
+                </div>
+
+                <div>
+                    <label for="id_funcion" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
+                        Función
+                    </label>
+                    <select class="form-select" id="id_funcion" name="id_funcion" required style="font-size:1.1rem;padding:10px">
+                        <option value="">-- Seleccioná una función --</option>
+                        {% for func in funciones %}
+                        <option value="{{ func.id_funcion }}">
+                            {{ func.titulo_pelicula | default('Película #' ~ func.id_pelicula) }} — {{ func.nombre_sala | default('Sala #' ~ func.id_sala) }} — {{ func.fecha_hora|datetimeformat }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <button type="submit" form="form-validador" id="btn-validar" class="btn btn-primary" style="font-size:1.1rem;padding:12px;margin-top:18px;display:none">
+        Validar acceso
+    </button>
 </div>
 
 {% endblock %}
@@ -139,12 +146,14 @@
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const statusDiv = document.getElementById('qr-status');
   const codigoInput = document.getElementById('codigo_qr');
+  const selectFuncion = document.getElementById('id_funcion');
 
   let scanning = false;
   let stream = null;
   let animationId = null;
   let lastScanTime = 0;
   const SCAN_INTERVAL = 100;
+  let isConsulting = false;
 
   function showStatus(message, type) {
     statusDiv.style.display = 'block';
@@ -217,6 +226,13 @@
           oscillator.stop(audioCtx.currentTime + 0.1);
         } catch(e) {}
 
+        // Limpiar resultados anteriores antes de consultar
+        hideResumenError();
+        document.getElementById('qr-resumen').classList.remove('active');
+
+        // Limpiar mensajes de validación del servidor ("Acceso Permitido"/"Denegado")
+        document.querySelectorAll('.notice').forEach(function(n) { n.remove(); });
+
         // Consultar la función asociada al QR
         consultarQr(code.data);
 
@@ -232,6 +248,13 @@
       stopCamera();
       return;
     }
+
+    // Limpiar resultados anteriores antes de iniciar escaneo
+    hideResumenError();
+    document.getElementById('qr-resumen').classList.remove('active');
+
+    // Limpiar mensajes de validación del servidor ("Acceso Permitido"/"Denegado")
+    document.querySelectorAll('.notice').forEach(function(n) { n.remove(); });
 
     try {
       showStatus('Solicitando permiso de cámara...');
@@ -293,10 +316,11 @@
   }
 
   async function consultarQr(codigo) {
-    hideResumenError();
-    const resumenDiv = document.getElementById('qr-resumen');
-    resumenDiv.classList.remove('active');
+    // Evitar consultas duplicadas (ej: escáner + debounce)
+    if (isConsulting) return;
+    isConsulting = true;
 
+    const resumenDiv = document.getElementById('qr-resumen');
     try {
       const resp = await fetch('/admin/consultar-qr/' + encodeURIComponent(codigo));
       const json = await resp.json();
@@ -305,7 +329,6 @@
         const data = json.data;
 
         // Autoseleccionar la función en el dropdown
-        const selectFuncion = document.getElementById('id_funcion');
         if (data.id_funcion) {
           selectFuncion.value = data.id_funcion;
         }
@@ -317,6 +340,9 @@
         document.getElementById('resumen-estado').textContent = data.estado_qr || '—';
         document.getElementById('resumen-butacas').textContent = (data.butacas && data.butacas.length) ? data.butacas.join(', ') : '—';
         resumenDiv.classList.add('active');
+
+        // Verificar si el formulario está completo y mostrar el botón
+        checkFormCompleteness();
       } else {
         const mensaje = json.mensaje || 'No se pudo consultar el código QR.';
         showResumenError(mensaje);
@@ -324,6 +350,9 @@
     } catch(err) {
       showResumenError('Error de conexión al consultar el código QR.');
       console.error('Error consultando QR:', err);
+    } finally {
+      // Liberar el bloqueo después de un breve delay para que el debounce no dispare otra consulta
+      setTimeout(() => { isConsulting = false; }, 1000);
     }
   }
 
@@ -341,6 +370,37 @@
       document.getElementById('qr-resumen').classList.remove('active');
     }
   });
+
+  // Rellenar manualmente
+  const btnManual = document.getElementById('btn-manual');
+  const accordionContent = document.getElementById('accordion-content');
+  btnManual.addEventListener('click', function() {
+    const isActive = accordionContent.classList.contains('active');
+    if (isActive) {
+      accordionContent.classList.remove('active');
+      btnManual.classList.remove('active');
+    } else {
+      accordionContent.classList.add('active');
+      btnManual.classList.add('active');
+    }
+  });
+
+  // Mostrar/ocultar botón "Validar acceso" según campos completados
+  const btnValidar = document.getElementById('btn-validar');
+
+  function checkFormCompleteness() {
+    const hasCodigo = codigoInput.value.trim().length > 0;
+    const hasFuncion = selectFuncion.value !== '';
+    if (hasCodigo && hasFuncion) {
+      btnValidar.style.display = 'inline-block';
+    } else {
+      btnValidar.style.display = 'none';
+    }
+  }
+
+  codigoInput.addEventListener('input', checkFormCompleteness);
+
+  selectFuncion.addEventListener('change', checkFormCompleteness);
 })();
 </script>
 {% endblock %}
