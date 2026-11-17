@@ -133,6 +133,12 @@ def confirmar_compra_route():
 
     except HTTPError as exc:
         if exc.response is not None and exc.response.status_code == 409:
+            if exc.response.json().get("code") == "FUNCION_FINALIZADA":
+                session.pop("compra_pendiente", None)
+                session.pop("compra_actual", None)
+                flash("La función ya finalizó, no se pueden comprar entradas.", "danger")
+                return redirect(url_for("main.index"))
+
             id_funcion = compra_pendiente["id_funcion"]
 
             session.pop("compra_pendiente", None)
@@ -186,7 +192,8 @@ def index():
         try:
             funciones = obtener_funciones(
                 id_sucursal=id_sucursal,
-                fecha=fecha
+                fecha=fecha,
+                solo_vigentes=True,
             )
             cartelera = armar_cartelera(
                 peliculas,
@@ -253,7 +260,8 @@ def pelicula_detalle(id_pelicula):
         funciones = obtener_funciones(
             id_sucursal=id_sucursal,
             fecha=fecha,
-            id_pelicula=id_pelicula
+            id_pelicula=id_pelicula,
+            solo_vigentes=True,
         )
     except (RequestException, RuntimeError, ValueError):
         error_funciones = True
