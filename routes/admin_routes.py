@@ -358,6 +358,10 @@ def consultar_qr(codigo):
     if not exito:
         if error == "Código QR no encontrado":
             return jsonify({"status": "error", "error": "QR_NO_ENCONTRADO", "mensaje": error}), 404
+        if error == "Sesión expirada o sin permisos":
+            return jsonify({"status": "error", "error": "SESION_EXPIRADA", "mensaje": error}), 401
+        if error == "No se pudo conectar con el servidor":
+            return jsonify({"status": "error", "error": "BACKEND_NO_DISPONIBLE", "mensaje": error}), 503
         return jsonify({"status": "error", "error": "ERROR", "mensaje": error}), 500
 
     return jsonify({"status": "success", "data": datos}), 200
