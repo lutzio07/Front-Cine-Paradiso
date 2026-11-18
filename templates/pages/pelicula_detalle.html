@@ -10,6 +10,15 @@
 
 {% block content %}
 <section class="container detalle-pelicula">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="notice {% if category == 'success' %}success{% endif %}" role="status" style="margin-bottom:16px">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
     {% if error %}
         <p class="empty-state">No pudimos obtener la información de la película.</p>
         <a href="{{ url_for('main.index') }}" class="btn btn-quiet">Volver a la cartelera</a>
@@ -102,6 +111,62 @@
             No hay funciones disponibles para los filtros seleccionados.
         </p>
 
+    {% endif %}
+     <h2 class="section-head" id="resenas">Reseñas</h2>
+
+    {% if error_resenas %}
+        <p class="empty-state">
+            No pudimos cargar las reseñas por el momento. Intentá nuevamente más tarde.
+        </p>
+    {% elif resenas %}
+        <div class="resenas-lista">
+            {% for r in resenas %}
+                <div class="card soft resena-card">
+                    <div class="resena-cabecera">
+                        <strong>{{ r.nombre_usuario }}</strong>
+                        <span class="resena-estrellas" aria-label="{{ r.puntuacion }} de 5">
+                            {{ '★' * r.puntuacion }}{{ '☆' * (5 - r.puntuacion) }}
+                        </span>
+                    </div>
+                    {% if r.comentario %}
+                        <p>{{ r.comentario }}</p>
+                    {% endif %}
+                    <small class="resena-fecha">{{ r.fecha|datetimeformat("%d/%m/%Y") }}</small>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-state">Todavía no hay reseñas para esta película.</p>
+    {% endif %}
+
+    {% if session.get('backend_session') and session.get('rol') == 'CLIENTE' %}
+        <form method="POST"
+              action="{{ url_for('main.publicar_resena', id_pelicula=pelicula.id_pelicula) }}"
+              class="form-grid resena-form">
+            <div class="field">
+                <label for="puntuacion">Puntuación:</label>
+                <select name="puntuacion" id="puntuacion" class="select" required>
+                    <option value="">-- Elegí una puntuación --</option>
+                    <option value="5">★★★★★ (5)</option>
+                    <option value="4">★★★★☆ (4)</option>
+                    <option value="3">★★★☆☆ (3)</option>
+                    <option value="2">★★☆☆☆ (2)</option>
+                    <option value="1">★☆☆☆☆ (1)</option>
+                </select>
+            </div>
+            <div class="field full">
+                <label for="comentario">Comentario (opcional):</label>
+                <textarea name="comentario" id="comentario" class="textarea"
+                          maxlength="1000" placeholder="Contanos qué te pareció la película"></textarea>
+            </div>
+            <div class="form-actions" style="grid-column: 1 / -1;">
+                <button type="submit" class="btn btn-primary">Publicar reseña</button>
+            </div>
+        </form>
+    {% elif not session.get('backend_session') %}
+        <p class="empty-state">
+            <a href="{{ url_for('auth.vista_login') }}">Iniciá sesión</a> para dejar una reseña.
+        </p>
     {% endif %}
     {% endif %}
 </section>
