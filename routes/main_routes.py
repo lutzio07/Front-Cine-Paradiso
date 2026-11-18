@@ -146,7 +146,12 @@ def confirmar_compra_route():
                 return redirect(url_for("main.seleccionar_servicios"))
 
         if exc.response is not None and exc.response.status_code == 409:
-            if exc.response.json().get("code") == "FUNCION_FINALIZADA":
+            try:
+                codigo_409 = exc.response.json().get("code")
+            except (ValueError, AttributeError):
+                codigo_409 = None
+
+            if codigo_409 == "FUNCION_FINALIZADA":
                 session.pop("compra_pendiente", None)
                 session.pop("compra_actual", None)
                 flash("La función ya finalizó, no se pueden comprar entradas.", "danger")
