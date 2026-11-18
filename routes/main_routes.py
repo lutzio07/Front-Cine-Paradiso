@@ -132,7 +132,31 @@ def confirmar_compra_route():
             )
 
     except HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 400:
+            try:
+                codigo_error = exc.response.json().get("code")
+            except (ValueError, AttributeError):
+                codigo_error = None
+
+            if codigo_error == "SERVICIO_CANTIDAD_INVALIDA":
+                flash(
+                    "El pase VIP no puede superar la cantidad de butacas seleccionadas.",
+                    "danger",
+                )
+                return redirect(url_for("main.seleccionar_servicios"))
+
         if exc.response is not None and exc.response.status_code == 409:
+            try:
+                codigo_409 = exc.response.json().get("code")
+            except (ValueError, AttributeError):
+                codigo_409 = None
+
+            if codigo_409 == "FUNCION_FINALIZADA":
+                session.pop("compra_pendiente", None)
+                session.pop("compra_actual", None)
+                flash("La función ya finalizó, no se pueden comprar entradas.", "danger")
+                return redirect(url_for("main.index"))
+
             id_funcion = compra_pendiente["id_funcion"]
 
             session.pop("compra_pendiente", None)
@@ -186,7 +210,8 @@ def index():
         try:
             funciones = obtener_funciones(
                 id_sucursal=id_sucursal,
-                fecha=fecha
+                fecha=fecha,
+                solo_vigentes=True,
             )
             cartelera = armar_cartelera(
                 peliculas,
@@ -253,7 +278,8 @@ def pelicula_detalle(id_pelicula):
         funciones = obtener_funciones(
             id_sucursal=id_sucursal,
             fecha=fecha,
-            id_pelicula=id_pelicula
+            id_pelicula=id_pelicula,
+            solo_vigentes=True,
         )
     except (RequestException, RuntimeError, ValueError):
         error_funciones = True
@@ -324,7 +350,11 @@ def detalle_compra(id_compra):
 
     qr = None
     # Solo se muestra el QR si la compra sigue pendiente de uso.
-    if compra.get("codigo_qr") and compra.get("estado_qr") == "PENDIENTE":
+    if (
+        compra.get("codigo_qr")
+        and compra.get("estado_qr") == "PENDIENTE"
+        and not compra.get("funcion_finalizada")
+    ):
         qr = generar_qr_data_url(compra["codigo_qr"])
 
     return render_template(

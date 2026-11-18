@@ -17,6 +17,8 @@
     {% set estado = ("Expirada", "badge-outline", "La reserva expiró antes de confirmarse, por eso no tiene código.") %}
 {% elif compra.estado_compra == "PENDIENTE" %}
     {% set estado = ("Pendiente", "badge-outline", "El código se genera cuando se confirma la compra.") %}
+{% elif compra.funcion_finalizada %}
+    {% set estado = ("Función finalizada", "badge-outline", "La función ya finalizó, por eso el código QR ya no está disponible.") %}
 {% else %}
     {% set estado = ("Sin código", "badge-outline", "El código no está disponible para esta compra.") %}
 {% endif %}
