@@ -132,6 +132,19 @@ def confirmar_compra_route():
             )
 
     except HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 400:
+            try:
+                codigo_error = exc.response.json().get("code")
+            except (ValueError, AttributeError):
+                codigo_error = None
+
+            if codigo_error == "SERVICIO_CANTIDAD_INVALIDA":
+                flash(
+                    "El pase VIP no puede superar la cantidad de butacas seleccionadas.",
+                    "danger",
+                )
+                return redirect(url_for("main.seleccionar_servicios"))
+
         if exc.response is not None and exc.response.status_code == 409:
             if exc.response.json().get("code") == "FUNCION_FINALIZADA":
                 session.pop("compra_pendiente", None)
