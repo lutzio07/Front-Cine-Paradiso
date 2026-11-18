@@ -39,7 +39,7 @@
     </section>
 
     <div class="stack">
-        {% set vigentes = compras|selectattr("estado_compra", "equalto", "CONFIRMADA")|selectattr("estado_qr", "equalto", "PENDIENTE")|list %}
+        {% set vigentes = compras|selectattr("estado_compra", "equalto", "CONFIRMADA")|selectattr("estado_qr", "equalto", "PENDIENTE")|rejectattr("funcion_finalizada")|list %}
         {% if vigentes %}
         {% for proxima in vigentes %}
         <section class="card soft">
@@ -79,6 +79,8 @@
                         {% set etiqueta, clase = ("Expirada", "badge-red") %}
                         {% elif compra.estado_compra == "PENDIENTE" and not compra.estado_qr %}
                         {% set etiqueta, clase = ("Pendiente de confirmación (sin QR)", "badge-outline") %}
+                        {% elif compra.estado_compra == "CONFIRMADA" and compra.estado_qr == "PENDIENTE" and compra.funcion_finalizada %}
+                        {% set etiqueta, clase = ("Función finalizada", "badge-outline") %}
                         {% elif compra.estado_compra == "CONFIRMADA" and compra.estado_qr == "PENDIENTE" %}
                         {% set etiqueta, clase = ("Vigente", "badge-green") %}
                         {% elif compra.estado_qr == "USADO" %}
