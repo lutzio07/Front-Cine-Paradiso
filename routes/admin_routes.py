@@ -4,6 +4,7 @@ from flask import (
     Blueprint,
     Response,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -13,6 +14,7 @@ from flask import (
 
 from services.admin_service import (
     buscar_peliculas_tmdb as servicio_buscar_peliculas_tmdb,
+    consultar_codigo_qr as servicio_consultar_codigo_qr,
     crear_funcion as servicio_crear_funcion,
     crear_sala as servicio_crear_sala,
     eliminar_funcion as servicio_eliminar_funcion,
@@ -346,6 +348,25 @@ def validador_post():
         tipo="permitido" if exito else "denegado",
     )
 
+
+@admin_bp.route("/consultar-qr/<codigo>", methods=["GET"], endpoint="consultar_qr")
+def consultar_qr(codigo):
+    if not es_admin():
+        return jsonify({"status": "error", "error": "ACCESO_DENEGADO", "mensaje": "Solo administradores"}), 403
+
+    exito, datos, error = servicio_consultar_codigo_qr(codigo)
+    if not exito:
+        if error == "Código QR no encontrado":
+            return jsonify({"status": "error", "error": "QR_NO_ENCONTRADO", "mensaje": error}), 404
+        if error == "Sesión expirada o sin permisos":
+            return jsonify({"status": "error", "error": "SESION_EXPIRADA", "mensaje": error}), 401
+        if error == "No se pudo conectar con el servidor":
+            return jsonify({"status": "error", "error": "BACKEND_NO_DISPONIBLE", "mensaje": error}), 503
+        return jsonify({"status": "error", "error": "ERROR", "mensaje": error}), 500
+
+    return jsonify({"status": "success", "data": datos}), 200
+
+
 @admin_bp.route("/salas", methods=["POST"], endpoint="crear_sala")
 def crear_sala():
 
@@ -497,8 +518,8 @@ def eliminar_funcion(id_funcion):
     else:
         flash(mensaje, "error")
 
-    return redirect(url_for("admin.peliculas"))
-
+    return redirect(url_for("admin.peliculas"))
+
 
 @admin_bp.route("/peliculas", methods=["POST"], endpoint="importar_pelicula")
 def importar_pelicula():

@@ -43,41 +43,364 @@
 {% endif %}
 
 <div style="max-width:600px">
-    <form method="POST" action="/admin/validador" style="display:flex;flex-direction:column;gap:18px">
-        <div>
-            <label for="codigo_qr" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
-                Código QR
-            </label>
-            <input
-                type="text"
-                class="form-control"
-                id="codigo_qr"
-                name="codigo_qr"
-                placeholder="Ingresá o escaneá el código QR"
-                autocomplete="off"
-                autofocus
-                style="font-size:1.2rem;padding:12px"
-            >
-        </div>
+    <!-- Botón de escaneo QR -->
+    <button type="button" id="btn-camara" class="btn btn-secondary btn-scan">
+        <span class="material-symbols-outlined">qr_code_scanner</span>
+        Escanear código QR
+    </button>
 
-        <div>
-            <label for="id_funcion" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
-                Función
-            </label>
-            <select class="form-select" id="id_funcion" name="id_funcion" required style="font-size:1.1rem;padding:10px">
-                <option value="">-- Seleccioná una función --</option>
-                {% for func in funciones %}
-                <option value="{{ func.id_funcion }}">
-                    {{ func.titulo_pelicula | default('Película #' ~ func.id_pelicula) }} — {{ func.nombre_sala | default('Sala #' ~ func.id_sala) }} — {{ func.fecha_hora|datetimeformat }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
+    <!-- Contenedor de la cámara -->
+    <div id="qr-scanner" class="qr-scanner-container">
+        <video id="qr-video" autoplay playsinline></video>
+        <canvas id="qr-canvas"></canvas>
+        <div id="qr-status" class="qr-scanner-status" style="display:none;"></div>
+    </div>
 
-        <button type="submit" class="btn btn-primary" style="font-size:1.1rem;padding:12px">
-            Validar acceso
+    <!-- Panel de resumen del QR escaneado -->
+    <div id="qr-resumen" class="qr-resumen">
+        <h3>Información del QR</h3>
+        <div class="qr-resumen-grid">
+            <div class="qr-resumen-item">
+                <label>Película</label>
+                <span id="resumen-pelicula">—</span>
+            </div>
+            <div class="qr-resumen-item">
+                <label>Sala</label>
+                <span id="resumen-sala">—</span>
+            </div>
+            <div class="qr-resumen-item">
+                <label>Fecha y hora</label>
+                <span id="resumen-hora">—</span>
+            </div>
+            <div class="qr-resumen-item">
+                <label>Estado</label>
+                <span id="resumen-estado">—</span>
+            </div>
+            <div class="qr-resumen-item full-width">
+                <label>Butacas</label>
+                <span id="resumen-butacas">—</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensaje de error del QR -->
+    <div id="qr-resumen-error" class="qr-resumen-error"></div>
+
+    <!-- Rellenar manualmente -->
+    <div class="manual-input-accordion">
+        <button type="button" class="accordion-toggle" id="btn-manual">
+            <span class="accordion-title">COMPLETAR MANUALMENTE</span>
+            <span class="accordion-icon material-symbols-outlined">expand_more</span>
         </button>
-    </form>
+        <div class="accordion-content" id="accordion-content">
+            <form method="POST" action="/admin/validador" id="form-validador" style="display:flex;flex-direction:column;gap:18px">
+                <div>
+                    <label for="codigo_qr" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
+                        Código QR
+                    </label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="codigo_qr"
+                        name="codigo_qr"
+                        placeholder="Ingresá o escaneá el código QR"
+                        autocomplete="off"
+                        style="font-size:1.2rem;padding:12px"
+                    >
+                </div>
+
+                <div>
+                    <label for="id_funcion" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
+                        Función
+                    </label>
+                    <select class="form-select" id="id_funcion" name="id_funcion" required style="font-size:1.1rem;padding:10px">
+                        <option value="">-- Seleccioná una función --</option>
+                        {% for func in funciones %}
+                        <option value="{{ func.id_funcion }}">
+                            {{ func.titulo_pelicula | default('Película #' ~ func.id_pelicula) }} — {{ func.nombre_sala | default('Sala #' ~ func.id_sala) }} — {{ func.fecha_hora|datetimeformat }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <button type="submit" form="form-validador" id="btn-validar" class="btn btn-primary" style="font-size:1.1rem;padding:12px;margin-top:18px;display:none">
+        Validar acceso
+    </button>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<!-- Biblioteca jsQR desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+<script>
+(function() {
+  const btnCamara = document.getElementById('btn-camara');
+  const scannerContainer = document.getElementById('qr-scanner');
+  const video = document.getElementById('qr-video');
+  const canvas = document.getElementById('qr-canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const statusDiv = document.getElementById('qr-status');
+  const codigoInput = document.getElementById('codigo_qr');
+  const selectFuncion = document.getElementById('id_funcion');
+
+  let scanning = false;
+  let stream = null;
+  let animationId = null;
+  let lastScanTime = 0;
+  const SCAN_INTERVAL = 100;
+  let isConsulting = false;
+
+  function showStatus(message, type) {
+    statusDiv.style.display = 'block';
+    statusDiv.textContent = message;
+    statusDiv.className = 'qr-scanner-status ' + (type || '');
+  }
+
+  function hideStatus() {
+    statusDiv.style.display = 'none';
+  }
+
+  function stopCamera() {
+    scanning = false;
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+    }
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+    video.srcObject = null;
+    scannerContainer.classList.remove('active');
+    btnCamara.innerHTML = '<span class="material-symbols-outlined">qr_code_scanner</span> Escanear código QR';
+    hideStatus();
+  }
+
+  function scanFrame(timestamp) {
+    if (!scanning) return;
+
+    // Limitar frecuencia de escaneo
+    if (timestamp - lastScanTime < SCAN_INTERVAL) {
+      animationId = requestAnimationFrame(scanFrame);
+      return;
+    }
+    lastScanTime = timestamp;
+
+    // Dibujar frame del video en el canvas
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      // Intentar decodificar
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (code) {
+        // Código QR detectado
+        scanning = false;
+        stopCamera();
+
+        // Rellenar el campo con el código
+        codigoInput.value = code.data;
+        codigoInput.focus();
+
+        // Mostrar mensaje de éxito
+        showStatus('✓ Código detectado: ' + code.data, 'success');
+
+        // Reproducir un sonido breve (opcional)
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.frequency.value = 800;
+          gainNode.gain.value = 0.1;
+          oscillator.start();
+          oscillator.stop(audioCtx.currentTime + 0.1);
+        } catch(e) {}
+
+        // Limpiar resultados anteriores antes de consultar
+        hideResumenError();
+        document.getElementById('qr-resumen').classList.remove('active');
+
+        // Limpiar mensajes de validación del servidor ("Acceso Permitido"/"Denegado")
+        document.querySelectorAll('.notice').forEach(function(n) { n.remove(); });
+
+        // Consultar la función asociada al QR
+        consultarQr(code.data);
+
+        return;
+      }
+    }
+
+    animationId = requestAnimationFrame(scanFrame);
+  }
+
+  async function startCamera() {
+    if (scanning) {
+      stopCamera();
+      return;
+    }
+
+    // Limpiar resultados anteriores antes de iniciar escaneo
+    hideResumenError();
+    document.getElementById('qr-resumen').classList.remove('active');
+
+    // Limpiar mensajes de validación del servidor ("Acceso Permitido"/"Denegado")
+    document.querySelectorAll('.notice').forEach(function(n) { n.remove(); });
+
+    try {
+      showStatus('Solicitando permiso de cámara...');
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' } // Preferir cámara trasera
+      });
+
+      video.srcObject = stream;
+      await video.play();
+
+      scanning = true;
+      scannerContainer.classList.add('active');
+      btnCamara.innerHTML = '<span class="scan-indicator"></span> Detener cámara';
+      showStatus('Escaneando... Apuntá la cámara al código QR');
+
+      animationId = requestAnimationFrame(scanFrame);
+
+    } catch (err) {
+      console.error('Error al acceder a la cámara:', err);
+      stopCamera();
+
+      let message = 'No se pudo acceder a la cámara.';
+      if (err.name === 'NotAllowedError') {
+        message = 'Permiso de cámara denegado. Habilitalo en la configuración del navegador.';
+      } else if (err.name === 'NotFoundError') {
+        message = 'No se encontró una cámara en el dispositivo.';
+      }
+      showStatus(message, 'error');
+    }
+  }
+
+  // Event listener para el botón
+  btnCamara.addEventListener('click', startCamera);
+
+  function showResumenError(message) {
+    const errorDiv = document.getElementById('qr-resumen-error');
+    errorDiv.textContent = message;
+    errorDiv.classList.add('active');
+    document.getElementById('qr-resumen').classList.remove('active');
+  }
+
+  function hideResumenError() {
+    document.getElementById('qr-resumen-error').classList.remove('active');
+  }
+
+  function formatFechaHora(fechaHora) {
+    try {
+      const d = new Date(fechaHora.replace(' ', 'T'));
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    } catch(e) {
+      return fechaHora;
+    }
+  }
+
+  async function consultarQr(codigo) {
+    // Evitar consultas duplicadas (ej: escáner + debounce)
+    if (isConsulting) return;
+    isConsulting = true;
+
+    const resumenDiv = document.getElementById('qr-resumen');
+    try {
+      const resp = await fetch('/admin/consultar-qr/' + encodeURIComponent(codigo));
+      const json = await resp.json();
+
+      if (resp.ok && json.status === 'success') {
+        const data = json.data;
+
+        // Autoseleccionar la función en el dropdown
+        if (data.id_funcion) {
+          selectFuncion.value = data.id_funcion;
+        }
+
+        // Mostrar el panel de resumen
+        document.getElementById('resumen-pelicula').textContent = data.pelicula_titulo || '—';
+        document.getElementById('resumen-sala').textContent = data.sala_nombre || '—';
+        document.getElementById('resumen-hora').textContent = data.fecha_hora ? formatFechaHora(data.fecha_hora) : '—';
+        document.getElementById('resumen-estado').textContent = data.estado_qr || '—';
+        document.getElementById('resumen-butacas').textContent = (data.butacas && data.butacas.length) ? data.butacas.join(', ') : '—';
+        resumenDiv.classList.add('active');
+
+        // Verificar si el formulario está completo y mostrar el botón
+        checkFormCompleteness();
+      } else {
+        const mensaje = json.mensaje || 'No se pudo consultar el código QR.';
+        showResumenError(mensaje);
+      }
+    } catch(err) {
+      showResumenError('Error de conexión al consultar el código QR.');
+      console.error('Error consultando QR:', err);
+    } finally {
+      // Liberar el bloqueo después de un breve delay para que el debounce no dispare otra consulta
+      setTimeout(() => { isConsulting = false; }, 1000);
+    }
+  }
+
+  // También consultar cuando se tipea manualmente el código (debounce)
+  let debounceTimer = null;
+  codigoInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    const codigo = codigoInput.value.trim();
+    if (codigo.length >= 4) {
+      debounceTimer = setTimeout(function() {
+        consultarQr(codigo);
+      }, 500);
+    } else {
+      hideResumenError();
+      document.getElementById('qr-resumen').classList.remove('active');
+    }
+  });
+
+  // Rellenar manualmente
+  const btnManual = document.getElementById('btn-manual');
+  const accordionContent = document.getElementById('accordion-content');
+  btnManual.addEventListener('click', function() {
+    const isActive = accordionContent.classList.contains('active');
+    if (isActive) {
+      accordionContent.classList.remove('active');
+      btnManual.classList.remove('active');
+    } else {
+      accordionContent.classList.add('active');
+      btnManual.classList.add('active');
+    }
+  });
+
+  // Mostrar/ocultar botón "Validar acceso" según campos completados
+  const btnValidar = document.getElementById('btn-validar');
+
+  function checkFormCompleteness() {
+    const hasCodigo = codigoInput.value.trim().length > 0;
+    const hasFuncion = selectFuncion.value !== '';
+    if (hasCodigo && hasFuncion) {
+      btnValidar.style.display = 'inline-block';
+    } else {
+      btnValidar.style.display = 'none';
+    }
+  }
+
+  codigoInput.addEventListener('input', checkFormCompleteness);
+
+  selectFuncion.addEventListener('change', checkFormCompleteness);
+})();
+</script>
 {% endblock %}
