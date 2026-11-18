@@ -104,5 +104,13 @@
         </section>
     </div>
     {% endif %}
+
+    {% if session.get('id_usuario') %}
+    <div class="profile-logout">
+        <form method="post" action="{{ url_for('auth.vista_logout') }}">
+            <button class="btn btn-danger btn-full" type="submit">Cerrar sesión</button>
+        </form>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

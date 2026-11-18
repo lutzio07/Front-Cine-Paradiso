@@ -39,10 +39,20 @@
 
     <div class="admin-workspace">
       <header class="admin-topbar">
-        <span>SISTEMA DE GESTIÓN OPERATIVA</span>
+        <span class="admin-topbar-title">SISTEMA DE GESTIÓN OPERATIVA</span>
+        <a href="{{ url_for('main.index') }}" class="admin-topbar-client-link"><span class="material-symbols-outlined">open_in_new</span>Ir al sitio cliente</a>
         <span class="topbar-meta">
+          <details class="admin-dropdown">
+            <summary><span class="material-symbols-outlined">menu</span></summary>
+            <nav class="admin-dropdown-nav">
+              <a href="{{ url_for('admin.dashboard') }}" {% if active|default('') == 'dashboard' %}aria-current="page"{% endif %}><span class="material-symbols-outlined">analytics</span>Dashboard</a>
+              <a href="{{ url_for('admin.peliculas') }}" {% if active|default('') == 'peliculas' %}aria-current="page"{% endif %}><span class="material-symbols-outlined">theaters</span>Películas y funciones</a>
+              <a href="{{ url_for('admin.servicios') }}" {% if active|default('') == 'servicios' %}aria-current="page"{% endif %}><span class="material-symbols-outlined">room_service</span>ABM servicios</a>
+              <a href="{{ url_for('admin.validador') }}" {% if active|default('') == 'validador' %}aria-current="page"{% endif %}><span class="material-symbols-outlined">qr_code_scanner</span>Validar QR</a>
+            </nav>
+          </details>
           <span class="online-indicator">● En línea</span>
-          <span class="avatar" aria-hidden="true">A</span>
+          <a href="{{ url_for('main.perfil') }}" class="avatar" aria-label="Perfil">A</a>
         </span>
       </header>
   {% else %}
@@ -74,5 +84,18 @@
   {% endif %}
 
   {% block scripts %}{% endblock %}
+
+  <script>
+    // Cerrar dropdown del admin al tocar fuera (móvil)
+    (function() {
+      var dropdown = document.querySelector('.admin-dropdown');
+      if (!dropdown) return;
+      document.addEventListener('click', function(e) {
+        if (dropdown.open && !dropdown.contains(e.target)) {
+          dropdown.open = false;
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
