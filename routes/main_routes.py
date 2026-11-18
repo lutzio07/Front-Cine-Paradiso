@@ -332,7 +332,11 @@ def detalle_compra(id_compra):
 
     qr = None
     # Solo se muestra el QR si la compra sigue pendiente de uso.
-    if compra.get("codigo_qr") and compra.get("estado_qr") == "PENDIENTE":
+    if (
+        compra.get("codigo_qr")
+        and compra.get("estado_qr") == "PENDIENTE"
+        and not compra.get("funcion_finalizada")
+    ):
         qr = generar_qr_data_url(compra["codigo_qr"])
 
     return render_template(
