@@ -4,11 +4,15 @@ Aplicación web del sistema de venta de entradas de cine **Cine Paradiso**, desa
 
 ---
 
+## 🔗 Estructura del Proyecto
+Este sistema de venta de entradas está compuesto por dos repositorios complementarios:
+
+*   **[Backend (API REST)](https://github.com/Fachaso/Backend-Cine-Paradiso):** Desarrollado en Flask, maneja la lógica de negocio, la conexión a la base de datos MySQL, el sistema de estadísticas y la seguridad de los endpoints.
+*   **[Frontend (Interfaz de Usuario)](https://github.com/lutzio07/Front---Cine-Paradiso):** Contiene tanto la aplicación web de acceso para los usuarios finales como el backoffice para que los administradores configuren las salas y películas.
+
 ## Enlaces y Documentación del Proyecto
 
-* **Repositorio Frontend (Interfaz Web):** [Front-Cine-Paradiso](https://github.com/lutzio07/Front---Cine-Paradiso)
-* **Repositorio Backend (API REST):** [Backend-Cine-Paradiso](https://github.com/Fachaso/Backend-Cine-Paradiso)
-* **Diseño / Mockups:** [PEGAR LINK DE MOCKUP ACÁ]
+* **Diseño / Mockups:** [[https://www.figma.com/proto/sehm8206edP58cDz0Sj8f8/Figma-basics?node-id=3825-988&p=f&t=nzzL0frzXv6JGVMO-1&scaling=min-zoom&content-scaling=fixed&page-id=3825%3A5]
 * **Documentación de Rutas Frontend:** [endpoints.md](./endpoints.md)
 
 ---
@@ -181,4 +185,3 @@ Abrí en el navegador: **`http://localhost:5001`**
 * **Separación estricta Front / Back:** El Frontend no accede directamente a MySQL ni contiene reglas de persistencia; delega todas las validaciones críticas y cálculos de precios en la API REST mediante `requests`.
 * **Flujo de compra en dos pasos sobre sesión:** La selección de butacas (`POST /funciones/<id>/butacas`) se resguarda temporalmente en la sesión del servidor (`compra_pendiente`) para permitir el agregado opcional de servicios adicionales en `/compras/servicios` antes de confirmar la transacción definitiva en `POST /api/compras`.
 * **Renderizado de QR sin archivos temporales:** En la vista de detalle de compra (`/mis-compras/<id_compra>`), el código QR activo se genera en memoria como imagen PNG codificada en Base64 (`data:image/png;base64,...`) mediante `qr_service.py`, evitando escribir archivos en disco.
-````[cite: 6, 20, 21, 22, 43, 45, 46, 47, 48, 49, 50, 51, 59, 60, 61, 62, 63]
