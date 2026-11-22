@@ -76,8 +76,8 @@ def obtener_datos_backoffice_peliculas():
     return sucursales, salas, peliculas_list, funciones
 
 
-def crear_sala(id_sucursal, nombre, capacidad):
-    payload = { "nombre": nombre, "capacidad": capacidad }
+def crear_sala(id_sucursal, nombre, filas):
+    payload = {"nombre": nombre, "filas": filas}
 
     try:
         respuesta = requests.post(

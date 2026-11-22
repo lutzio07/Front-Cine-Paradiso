@@ -362,19 +362,51 @@ def crear_sala():
 
     id_sucursal = request.form.get("id_sucursal", "").strip()
     nombre = request.form.get("nombre", "").strip()
+    izquierdas = request.form.getlist("izquierda")
+    centros = request.form.getlist("centro")
+    derechas = request.form.getlist("derecha")
 
-    try:
-        capacidad = int(request.form.get("capacidad", ""))
+    error = None
+    filas = []
+    capacidad = 0
 
-    except ValueError:
-        flash("La capacidad debe ser un número entero.", "error")
+    if not id_sucursal.isascii() or not id_sucursal.isdecimal() or int(id_sucursal) <= 0:
+        error = "Seleccioná una sucursal válida."
+    elif not nombre or len(nombre) > 50:
+        error = "El nombre de la sala debe tener entre 1 y 50 caracteres."
+    elif not izquierdas or len(izquierdas) != len(centros) or len(centros) != len(derechas):
+        error = "Indicá los tres bloques de cada fila."
+    elif len(izquierdas) > 40:
+        error = "La sala no puede superar las 200 butacas."
+    else:
+        for numero_fila, valores in enumerate(zip(izquierdas, centros, derechas), start=1):
+            if any(not valor.strip().isascii() or not valor.strip().isdecimal() for valor in valores):
+                error = f"La fila {numero_fila} debe contener números enteros no negativos."
+                break
+
+            izquierdo, central, derecho = (int(valor.strip()) for valor in valores)
+            total_fila = izquierdo + central + derecho
+
+            if izquierdo > 5 or derecho > 5:
+                error = f"Los bloques laterales de la fila {numero_fila} admiten hasta 5 butacas."
+            elif central < 1:
+                error = f"El bloque central de la fila {numero_fila} debe tener al menos una butaca."
+            elif total_fila < 5:
+                error = f"La fila {numero_fila} debe tener al menos 5 butacas."
+            elif capacidad + total_fila > 200:
+                error = "La sala no puede superar las 200 butacas."
+
+            if error:
+                break
+
+            filas.append({"bloques": [izquierdo, central, derecho]})
+            capacidad += total_fila
+
+    if error:
+        flash(error, "error")
         return redirect(url_for("admin.peliculas"))
 
-    exito, mensaje = servicio_crear_sala(
-        id_sucursal,
-        nombre,
-        capacidad
-    )
+    exito, mensaje = servicio_crear_sala(id_sucursal, nombre, filas)
 
     if exito:
         flash(mensaje, "success")

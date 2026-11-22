@@ -43,6 +43,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/crear_sala.js') }}" defer></script>
 <script>
     const selectorSucursal = document.getElementById('funcion-sucursal');
     const selectorSala = document.getElementById('funcion-sala');
