@@ -1,0 +1,47 @@
+/* La columna indica la posición real de cada butaca, incluidos los pasillos. */
+.seleccion-butacas-page .seat-map-card {
+  min-width: 0;
+}
+
+.seleccion-butacas-page .seating-matrix-container {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.seleccion-butacas-page .seating-matrix {
+  width: max-content;
+  margin-inline: auto;
+  --ancho-butaca: 32px;
+  --separacion-butacas: 8px;
+}
+
+.seleccion-butacas-page .seat-row {
+  display: grid;
+  grid-template-columns: 22px max-content 22px;
+  align-items: center;
+  gap: 12px;
+}
+
+.seleccion-butacas-page .row-seats {
+  display: grid;
+  grid-template-columns: repeat(var(--cantidad-columnas), var(--ancho-butaca));
+  gap: var(--separacion-butacas);
+}
+
+.seleccion-butacas-page .row-seats .seat-cell {
+  grid-column: var(--asiento-columna);
+  width: var(--ancho-butaca);
+  height: var(--ancho-butaca);
+}
+
+@media (max-width: 600px) {
+  .seleccion-butacas-page .seating-matrix {
+    --ancho-butaca: 28px;
+    --separacion-butacas: 6px;
+  }
+
+  .seleccion-butacas-page .seat-row {
+    gap: 7px;
+  }
+}

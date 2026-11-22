@@ -8,6 +8,10 @@
 {% endif %}
 {% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/seleccion_butacas.css') }}">
+{% endblock %}
+
 {% block content %}
 <section class="container seleccion-butacas-page">
     {% if error %}
@@ -135,7 +139,7 @@
 
                 <!-- Grilla de la sala agrupada por filas -->
                 <div class="seating-matrix-container">
-                    <div class="seating-matrix" id="seating-matrix">
+                    <div class="seating-matrix" id="seating-matrix" style="--cantidad-columnas: {{ estadisticas.columnas|default(0) }}">
                         {% for fila, asientos in mapa_filas.items() %}
                             <div class="seat-row">
                                 <span class="row-letter" aria-hidden="true">{{ fila }}</span>
@@ -144,6 +148,7 @@
                                         {% set is_selected = (a.id_asiento in asientos_previamente_seleccionados) %}
                                         {% set is_occupied = (a.estado == 'OCUPADO') %}
                                         <label class="seat-cell {% if is_occupied %}occupied{% elif is_selected %}selected{% endif %}"
+                                               style="--asiento-columna: {{ a.columna }}"
                                                title="Fila {{ a.fila }} - Butaca {{ a.numero }}{% if is_occupied %} (Ocupada){% endif %}">
                                             <input type="checkbox"
                                                    name="asientos_ids"
@@ -151,8 +156,9 @@
                                                    data-id="{{ a.id_asiento }}"
                                                    data-fila="{{ a.fila }}"
                                                    data-numero="{{ a.numero }}"
+                                                   aria-label="Fila {{ a.fila }}, butaca {{ a.numero }}"
                                                    {% if is_occupied %}disabled aria-disabled="true"{% endif %}
-                                                   {% if is_selected %}checked{% endif %}
+                                                   {% if is_selected and not is_occupied %}checked{% endif %}
                                                    class="seat-checkbox visually-hidden">
                                             <span class="seat-number">{{ a.numero }}</span>
                                         </label>
