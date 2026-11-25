@@ -8,6 +8,10 @@
 {% endif %}
 {% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pelicula_detalle.css') }}">
+{% endblock %}
+
 {% block content %}
 <section class="container detalle-pelicula">
     {% if error %}

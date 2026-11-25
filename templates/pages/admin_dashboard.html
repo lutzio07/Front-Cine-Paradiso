@@ -2,6 +2,10 @@
 {% set section = 'admin' %}
 {% set active = 'dashboard' %}
 {% block title %}Dashboard | Backoffice Cine Paradiso{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
 {% macro pesos(valor) %}{{ ('$ {:,.2f}'.format(valor)).replace(',', 'X').replace('.', ',').replace('X', '.') }}{% endmacro %}
 {% macro barra(etiqueta, valor, maximo, texto) %}
 <div class="metric-bar">
