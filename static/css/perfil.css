@@ -1,3 +1,63 @@
+.profile-logout {
+  display: none;
+}
+.ticket-card {
+  display: grid;
+  grid-template-columns: 125px 1fr auto;
+  gap: 19px;
+  align-items: center;
+}
+.ticket-card .poster {
+  height: 160px;
+  aspect-ratio: auto;
+}
+.ticket-card h3 {
+  font-size: 1.35rem;
+}
+.history-list {
+  display: grid;
+  gap: 10px;
+}
+.history-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 17px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.qr-placeholder {
+  width: 180px;
+  height: 180px;
+  display: grid;
+  place-items: center;
+  border: 12px solid white;
+  background: white;
+  color: #151515;
+  margin: auto;
+}
+.qr-placeholder .material-symbols-outlined {
+  font-size: 100px;
+}
+
+@media (max-width: 620px) {
+  .ticket-card {
+    grid-template-columns: 90px 1fr;
+  }
+  .ticket-card .poster {
+    height: 125px;
+  }
+  .ticket-actions {
+    grid-column: 1/-1;
+  }
+  .profile-logout {
+    display: block;
+    margin-top: 24px;
+  }
+}
+
 .profile-banner { display: flex; gap: 25px; align-items: center; padding: 28px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 15px; margin-bottom: 28px; }
 .profile-purchase-actions { flex-wrap: wrap; }
 .profile-avatar { width: 83px; height: 83px; border-radius: 50%; display: grid; place-items: center; background: #4c2225; color: #e18f93; font: 700 2rem Outfit,sans-serif; }

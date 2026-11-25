@@ -40,16 +40,20 @@
     <details class="mobile-menu">
       <summary aria-label="Abrir menú"><span class="material-symbols-outlined">menu</span></summary>
       <nav aria-label="Navegación móvil">
-  <a href="/">Cartelera</a>
-  <a href="/perfil">Mi perfil y entradas</a>
+        <a href="/">Cartelera</a>
+        <a href="/perfil">Mi perfil y entradas</a>
 
-  {% set rol_directo = session.get('rol') or session.get('role') %}
-  {% set usr = session.get('usuario') or session.get('user') or session.get('user_info') %}
-  {% set rol_usr = usr.get('rol') if usr is mapping else '' %}
+        {% if (rol_directo|default('')|lower in ['admin', 'administrador']) or (rol_usr|default('')|lower in ['admin', 'administrador']) %}
+          <a href="{{ url_for('admin.peliculas') }}" style="color: #e50914; font-weight: bold;">Backoffice</a>
+        {% endif %}
 
-  {% if (rol_directo|default('')|lower in ['admin', 'administrador']) or (rol_usr|default('')|lower in ['admin', 'administrador']) %}
-    <a href="{{ url_for('admin.peliculas') }}" style="color: #e50914; font-weight: bold;">Backoffice</a>
-  {% endif %}
+        {% if session.get('id_usuario') %}
+          <form action="{{ url_for('auth.vista_logout') }}" method="post">
+            <button class="btn btn-quiet btn-small btn-full" type="submit">Cerrar sesión</button>
+          </form>
+        {% else %}
+          <a class="btn btn-quiet btn-small" href="{{ url_for('auth.vista_login') }}">Iniciar sesión</a>
+        {% endif %}
       </nav>
     </details>
   </div>
