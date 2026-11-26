@@ -31,6 +31,6 @@
 - `POST /admin/funciones/eliminar/<int:id_funcion>` : Elimina una función sin entradas vendidas. (`DELETE /api/funciones/<id>`)
 - `GET /admin/servicios` : Listado de servicios adicionales. (`GET /api/servicios`)
 - `GET /admin/validador` : Pantalla de validación del QR en el ingreso a la sala. (`GET /api/funciones`)
-- `POST /admin/validador` : Valida el QR y lo marca como utilizado. (`PATCH /api/codigos-qr/<codigo_qr>`)
+- `POST /admin/validador` : Consulta los datos del QR o lo valida y marca como utilizado, según la acción elegida. (`GET /api/codigos-qr/<codigo_qr>`, `PATCH /api/codigos-qr/<codigo_qr>`)
 - `GET /admin/dashboard` : Panel de estadísticas con ocupación, ventas por género, franjas horarias y cancelaciones. (`GET /api/estadisticas/ocupacion`, `/ventas-por-genero`, `/franjas-horarias`, `/cancelaciones`, `GET /api/peliculas`, `GET /api/funciones`)
 - `GET /admin/estadisticas/reporte-pdf` : Descarga el PDF de estadísticas. (`GET /api/estadisticas/reporte-pdf`)
