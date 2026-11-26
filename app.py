@@ -31,5 +31,5 @@ if __name__ == "__main__":
     create_app().run(
         host="0.0.0.0",
         port=int(os.getenv("PORT", "5001")),
-        debug=True
+        debug=os.getenv("FLASK_DEBUG", "True").lower() in ["true", "1", "t"]
     )
