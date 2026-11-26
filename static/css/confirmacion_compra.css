@@ -1,0 +1,377 @@
+.confirmacion-compra-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.confirmacion-compra-page .booking-breadcrumb {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.confirmacion-compra-page .breadcrumb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .88rem;
+  font-weight: 500;
+}
+
+.confirmacion-compra-page .breadcrumb-back:hover {
+  color: var(--text);
+}
+
+.confirmacion-compra-page .breadcrumb-steps {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: .75rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.confirmacion-compra-page .breadcrumb-steps .step.active {
+  color: var(--red-bright);
+  font-weight: 700;
+}
+
+.confirmacion-compra-page .step-divider {
+  color: var(--border);
+}
+
+.confirmacion-compra-page .confirmation-banner {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 24px;
+  border-left: 3px solid var(--red-bright);
+  background: var(--surface-2);
+}
+
+.confirmation-movie-icon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border: 1px solid rgba(239, 38, 51, .28);
+  border-radius: 12px;
+  background: rgba(211, 18, 30, .13);
+  color: var(--red-bright);
+}
+
+.confirmation-movie-icon .material-symbols-outlined {
+  font-size: 32px;
+}
+
+.confirmation-function-info {
+  min-width: 0;
+}
+
+.confirmation-eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--red-bright);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.confirmacion-compra-page .function-title {
+  margin: 0 0 9px;
+  font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.confirmation-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.confirmation-metadata span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.confirmation-metadata .material-symbols-outlined {
+  color: var(--red-bright);
+  font-size: 18px;
+}
+
+.confirmation-seat-count {
+  display: flex;
+  min-width: 100px;
+  flex-direction: column;
+  align-items: center;
+  padding-left: 22px;
+  border-left: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .77rem;
+  text-align: center;
+}
+
+.confirmation-seat-count strong {
+  color: var(--text);
+  font: 800 1.8rem Outfit, sans-serif;
+}
+
+.confirmation-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+  gap: 26px;
+}
+
+.confirmation-details {
+  min-width: 0;
+}
+
+.confirmation-card {
+  min-width: 0;
+  background: var(--surface-2);
+}
+
+.confirmacion-compra-page .card-header {
+  margin-bottom: 18px;
+}
+
+.confirmation-card-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.confirmation-card-title h2 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.confirmation-card-title > .material-symbols-outlined {
+  font-size: 22px;
+}
+
+.confirmation-seat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+
+.confirmation-seat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid rgba(239, 38, 51, .32);
+  border-radius: 8px;
+  background: rgba(211, 18, 30, .12);
+  color: #ff858a;
+  font-size: .84rem;
+  font-weight: 700;
+}
+
+.confirmation-seat-chip .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.confirmation-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.confirmation-detail-row strong {
+  color: var(--text);
+  text-align: right;
+}
+
+.confirmation-subtotal {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.confirmation-service-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.confirmation-service-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.confirmation-service-row:first-child {
+  padding-top: 0;
+}
+
+.confirmation-service-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.confirmation-service-row > div span {
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.confirmation-service-row > strong {
+  flex-shrink: 0;
+}
+
+.confirmation-empty-services {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  font-size: .88rem;
+}
+
+.confirmation-empty-services .material-symbols-outlined {
+  color: var(--muted);
+  font-size: 19px;
+}
+
+.confirmation-summary {
+  position: sticky;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--surface-2);
+}
+
+.confirmation-summary-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.confirmation-summary-lines .confirmation-detail-row {
+  font-size: .86rem;
+}
+
+.confirmation-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-weight: 700;
+}
+
+.confirmation-total strong {
+  color: var(--red-bright);
+  font: 800 1.8rem Outfit, sans-serif;
+}
+
+.confirmation-summary-note {
+  margin: -8px 0 0;
+  font-size: .78rem;
+  text-align: center;
+}
+
+.confirmation-summary form,
+.confirmation-summary .btn {
+  width: 100%;
+}
+
+.confirmation-summary form {
+  margin-bottom: -8px;
+}
+
+.confirmation-back-link {
+  color: var(--muted);
+  font-size: .84rem;
+  text-align: center;
+}
+
+.confirmation-back-link:hover {
+  color: var(--text);
+}
+
+.confirmation-summary .btn:focus-visible,
+.confirmation-back-link:focus-visible {
+  outline: 2px solid var(--red-bright);
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .confirmation-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmation-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 620px) {
+  .confirmacion-compra-page .confirmation-banner {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .confirmation-movie-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .confirmation-movie-icon .material-symbols-outlined {
+    font-size: 26px;
+  }
+
+  .confirmation-seat-count {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .confirmation-seat-count strong {
+    font-size: 1.2rem;
+  }
+
+  .confirmacion-compra-page .card {
+    padding: 18px;
+  }
+
+  .confirmacion-compra-page .card-header {
+    align-items: flex-start;
+  }
+
+  .confirmation-detail-row,
+  .confirmation-service-row {
+    gap: 10px;
+  }
+
+  .confirmation-total strong {
+    font-size: 1.5rem;
+  }
+}
