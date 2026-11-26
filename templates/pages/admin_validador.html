@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% set section = 'admin' %}
+{% set active = 'validador' %}
+
+{% block title %}Validar QR | Backoffice Cine Paradiso{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Control de Acceso</span>
+        <h1>Validación de Acceso QR</h1>
+        <p>Ingresá el código QR y seleccioná la función para verificar el acceso.</p>
+    </div>
+</div>
+
+{% if tipo %}
+    {% if tipo == 'permitido' %}
+    <div class="notice success" role="status" style="margin-bottom:18px">
+        <strong style="font-size:1.4rem">Acceso Permitido</strong>
+        <p style="margin-top:8px">{{ mensaje }}</p>
+        {% if datos %}
+            {% if datos.get('pelicula_titulo') %}
+            <p><strong>Película:</strong> {{ datos.pelicula_titulo }}</p>
+            {% endif %}
+            {% if datos.get('sala_nombre') %}
+            <p><strong>Sala:</strong> {{ datos.sala_nombre }}</p>
+            {% endif %}
+            {% if datos.get('fecha_hora') %}
+            <p><strong>Fecha y hora:</strong> {{ datos.fecha_hora }}</p>
+            {% endif %}
+            {% if datos.get('butacas') %}
+            <p><strong>Butacas:</strong> {{ datos.butacas | join(', ') }}</p>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="notice" role="alert" style="margin-bottom:18px;border-left-color:#7f1d1d;background:#450a0a;color:#fecaca">
+        <strong style="font-size:1.4rem">Acceso Denegado</strong>
+        <p style="margin-top:8px">{{ mensaje }}</p>
+    </div>
+    {% endif %}
+{% endif %}
+
+<div style="max-width:600px">
+    <form method="POST" action="/admin/validador" style="display:flex;flex-direction:column;gap:18px">
+        <div>
+            <label for="codigo_qr" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
+                Código QR
+            </label>
+            <input
+                type="text"
+                class="form-control"
+                id="codigo_qr"
+                name="codigo_qr"
+                placeholder="Ingresá o escaneá el código QR"
+                autocomplete="off"
+                autofocus
+                style="font-size:1.2rem;padding:12px"
+            >
+        </div>
+
+        <div>
+            <label for="id_funcion" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
+                Función
+            </label>
+            <select class="form-select" id="id_funcion" name="id_funcion" required style="font-size:1.1rem;padding:10px">
+                <option value="">-- Seleccioná una función --</option>
+                {% for func in funciones %}
+                <option value="{{ func.id_funcion }}">
+                    {{ func.titulo_pelicula | default('Película #' ~ func.id_pelicula) }} — {{ func.nombre_sala | default('Sala #' ~ func.id_sala) }} — {{ func.fecha_hora|datetimeformat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="font-size:1.1rem;padding:12px">
+            Validar acceso
+        </button>
+    </form>
+</div>
+
+{% endblock %}

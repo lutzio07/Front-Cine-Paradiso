@@ -1,8 +1,9 @@
+/* Dashboard administrativo */
+
 .four-cols {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
-  margin-bottom: 28px;
 }
 
 .stat-card {
@@ -25,13 +26,6 @@
 .stat-card .stat-hint {
   font-size: .75rem;
   color: var(--muted);
-}
-
-/* Gráficos de barras para métricas */
-.chart-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px;
 }
 
 .metric-bars {
@@ -62,12 +56,16 @@
   background: linear-gradient(90deg, #9c1420, #ee4050);
   height: 100%;
   border-radius: 9px;
-  transition: width 0.4s ease;
 }
 
-/* Filtros y acciones del Dashboard */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
 .dashboard-section {
-  margin-top: 26px;
+  margin-top: 22px;
 }
 
 .dashboard-filters {
@@ -76,11 +74,22 @@
 
 .dashboard-actions {
   grid-column: 1 / -1;
-  display: flex;
-  gap: 12px;
+  margin-top: 0;
 }
 
-/* Responsividad */
+.dashboard-aviso {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  background: #501d22;
+  color: white;
+  border: 1px solid #ed626b;
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+}
+
 @media (max-width: 1100px) {
   .four-cols {
     grid-template-columns: repeat(2, minmax(0, 1fr));
