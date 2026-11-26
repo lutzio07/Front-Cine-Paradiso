@@ -1,9 +1,9 @@
-<section class="card">
+<section class="card crear-sala-card">
     <div class="card-header">
         <h2>B. Crear Nueva Sala</h2>
     </div>
 
-    <form action="{{ url_for('admin.crear_sala') }}" method="post" class="stack">
+    <form action="{{ url_for('admin.crear_sala') }}" method="post" class="stack" id="form-crear-sala">
         <div class="field">
             <label for="sala-sucursal">Sucursal</label>
             <select class="select" name="id_sucursal" id="sala-sucursal" required>
@@ -16,12 +16,34 @@
 
         <div class="field">
             <label for="sala-nombre">Nombre de la sala</label>
-            <input class="input" id="sala-nombre" name="nombre" placeholder="Ej.: Sala 1 - 3D" maxlength="150" required>
+            <input class="input" id="sala-nombre" name="nombre" placeholder="Ej.: Sala 1 - 3D" maxlength="50" required>
         </div>
 
         <div class="field">
-            <label for="sala-capacidad">Capacidad (Asientos)</label>
-            <input class="input" id="sala-capacidad" type="number" name="capacidad" min="1" max="200" placeholder="Ej.: 60" required>
+            <span class="sala-filas-label">Distribución de butacas</span>
+            <p class="sala-filas-ayuda">Configurá cada fila por separado. Los bloques laterales admiten hasta 5 butacas cada uno; el central debe tener al menos 1. Cada fila necesita al menos 5 butacas y la sala, como máximo, 200.</p>
+
+            <div id="sala-filas" class="sala-filas">
+                <fieldset class="sala-fila">
+                    <legend class="sala-fila-titulo">Fila A</legend>
+                    <div class="sala-fila-campos">
+                        <label class="field">Izquierda
+                            <input class="input" type="number" name="izquierda" min="0" max="5" step="1" value="0" required>
+                        </label>
+                        <label class="field">Centro
+                            <input class="input" type="number" name="centro" min="1" max="200" step="1" value="8" required>
+                        </label>
+                        <label class="field">Derecha
+                            <input class="input" type="number" name="derecha" min="0" max="5" step="1" value="0" required>
+                        </label>
+                    </div>
+                    <button type="button" class="btn sala-quitar-fila" hidden>Quitar fila</button>
+                </fieldset>
+            </div>
+
+            <button type="button" class="btn sala-agregar-fila" id="sala-agregar-fila">Agregar fila</button>
+            <p class="sala-capacidad" aria-live="polite">Capacidad total: <output id="sala-capacidad-total">8</output> / 200 butacas</p>
+            <p id="sala-error" class="sala-error" role="alert" hidden></p>
         </div>
 
         <button class="btn btn-primary btn-full" type="submit">

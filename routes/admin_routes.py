@@ -4,6 +4,7 @@ from flask import (
     Blueprint,
     Response,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -13,6 +14,7 @@ from flask import (
 
 from services.admin_service import (
     buscar_peliculas_tmdb as servicio_buscar_peliculas_tmdb,
+    consultar_codigo_qr as servicio_consultar_codigo_qr,
     crear_funcion as servicio_crear_funcion,
     crear_sala as servicio_crear_sala,
     eliminar_funcion as servicio_eliminar_funcion,
@@ -346,6 +348,25 @@ def validador_post():
         tipo="permitido" if exito else "denegado",
     )
 
+
+@admin_bp.route("/consultar-qr/<codigo>", methods=["GET"], endpoint="consultar_qr")
+def consultar_qr(codigo):
+    if not es_admin():
+        return jsonify({"status": "error", "error": "ACCESO_DENEGADO", "mensaje": "Solo administradores"}), 403
+
+    exito, datos, error = servicio_consultar_codigo_qr(codigo)
+    if not exito:
+        if error == "Código QR no encontrado":
+            return jsonify({"status": "error", "error": "QR_NO_ENCONTRADO", "mensaje": error}), 404
+        if error == "Sesión expirada o sin permisos":
+            return jsonify({"status": "error", "error": "SESION_EXPIRADA", "mensaje": error}), 401
+        if error == "No se pudo conectar con el servidor":
+            return jsonify({"status": "error", "error": "BACKEND_NO_DISPONIBLE", "mensaje": error}), 503
+        return jsonify({"status": "error", "error": "ERROR", "mensaje": error}), 500
+
+    return jsonify({"status": "success", "data": datos}), 200
+
+
 @admin_bp.route("/salas", methods=["POST"], endpoint="crear_sala")
 def crear_sala():
 
@@ -362,19 +383,51 @@ def crear_sala():
 
     id_sucursal = request.form.get("id_sucursal", "").strip()
     nombre = request.form.get("nombre", "").strip()
+    izquierdas = request.form.getlist("izquierda")
+    centros = request.form.getlist("centro")
+    derechas = request.form.getlist("derecha")
 
-    try:
-        capacidad = int(request.form.get("capacidad", ""))
+    error = None
+    filas = []
+    capacidad = 0
 
-    except ValueError:
-        flash("La capacidad debe ser un número entero.", "error")
+    if not id_sucursal.isascii() or not id_sucursal.isdecimal() or int(id_sucursal) <= 0:
+        error = "Seleccioná una sucursal válida."
+    elif not nombre or len(nombre) > 50:
+        error = "El nombre de la sala debe tener entre 1 y 50 caracteres."
+    elif not izquierdas or len(izquierdas) != len(centros) or len(centros) != len(derechas):
+        error = "Indicá los tres bloques de cada fila."
+    elif len(izquierdas) > 40:
+        error = "La sala no puede superar las 200 butacas."
+    else:
+        for numero_fila, valores in enumerate(zip(izquierdas, centros, derechas), start=1):
+            if any(not valor.strip().isascii() or not valor.strip().isdecimal() for valor in valores):
+                error = f"La fila {numero_fila} debe contener números enteros no negativos."
+                break
+
+            izquierdo, central, derecho = (int(valor.strip()) for valor in valores)
+            total_fila = izquierdo + central + derecho
+
+            if izquierdo > 5 or derecho > 5:
+                error = f"Los bloques laterales de la fila {numero_fila} admiten hasta 5 butacas."
+            elif central < 1:
+                error = f"El bloque central de la fila {numero_fila} debe tener al menos una butaca."
+            elif total_fila < 5:
+                error = f"La fila {numero_fila} debe tener al menos 5 butacas."
+            elif capacidad + total_fila > 200:
+                error = "La sala no puede superar las 200 butacas."
+
+            if error:
+                break
+
+            filas.append({"bloques": [izquierdo, central, derecho]})
+            capacidad += total_fila
+
+    if error:
+        flash(error, "error")
         return redirect(url_for("admin.peliculas"))
 
-    exito, mensaje = servicio_crear_sala(
-        id_sucursal,
-        nombre,
-        capacidad
-    )
+    exito, mensaje = servicio_crear_sala(id_sucursal, nombre, filas)
 
     if exito:
         flash(mensaje, "success")
@@ -497,8 +550,8 @@ def eliminar_funcion(id_funcion):
     else:
         flash(mensaje, "error")
 
-    return redirect(url_for("admin.peliculas"))
-
+    return redirect(url_for("admin.peliculas"))
+
 
 @admin_bp.route("/peliculas", methods=["POST"], endpoint="importar_pelicula")
 def importar_pelicula():

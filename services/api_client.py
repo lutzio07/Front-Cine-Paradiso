@@ -87,8 +87,10 @@ def obtener_pelicula_por_id(id_pelicula):
     return response.get("data")
 
 
-def obtener_funciones(id_pelicula=None, id_sucursal=None, fecha=None):
+def obtener_funciones(id_pelicula=None, id_sucursal=None, fecha=None, solo_vigentes=False):
     params = {}
+    if solo_vigentes:
+        params['vigentes'] = 'true'
     if id_sucursal:
         params['id_sucursal'] = id_sucursal
     if fecha:

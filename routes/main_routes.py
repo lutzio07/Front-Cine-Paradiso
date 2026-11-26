@@ -14,7 +14,7 @@ from services.api_client import (
 from services.butacas_service import agrupar_asientos_por_fila
 from services.cartelera_service import armar_cartelera
 from datetime import datetime
-from requests.exceptions import RequestException
+from requests.exceptions import HTTPError, RequestException
 from services.perfil_service import obtener_perfil
 from services.compras_service import obtener_detalle_compra
 from services.qr_service import generar_qr_data_url
@@ -131,6 +131,48 @@ def confirmar_compra_route():
                 respuesta.get("message", "No se pudo completar la compra.")
             )
 
+    except HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 400:
+            try:
+                codigo_error = exc.response.json().get("code")
+            except (ValueError, AttributeError):
+                codigo_error = None
+
+            if codigo_error == "SERVICIO_CANTIDAD_INVALIDA":
+                flash(
+                    "El pase VIP no puede superar la cantidad de butacas seleccionadas.",
+                    "danger",
+                )
+                return redirect(url_for("main.seleccionar_servicios"))
+
+        if exc.response is not None and exc.response.status_code == 409:
+            try:
+                codigo_409 = exc.response.json().get("code")
+            except (ValueError, AttributeError):
+                codigo_409 = None
+
+            if codigo_409 == "FUNCION_FINALIZADA":
+                session.pop("compra_pendiente", None)
+                session.pop("compra_actual", None)
+                flash("La función ya finalizó, no se pueden comprar entradas.", "danger")
+                return redirect(url_for("main.index"))
+
+            id_funcion = compra_pendiente["id_funcion"]
+
+            session.pop("compra_pendiente", None)
+            session.pop("compra_actual", None)
+
+            flash(
+                "Una o más butacas ya no están disponibles. Seleccioná nuevamente.",
+                "warning",
+            )
+            return redirect(
+                url_for("main.seleccion_butacas", id_funcion=id_funcion)
+            )
+
+        flash("No se pudo completar la compra. Intentá nuevamente.", "danger")
+        return redirect(url_for("main.seleccionar_servicios"))
+
     except (RequestException, RuntimeError, ValueError):
         flash("No se pudo completar la compra. Intentá nuevamente.", "danger")
         return redirect(url_for("main.seleccionar_servicios"))
@@ -152,23 +194,33 @@ def index():
     cartelera = []
     error = False
     error_funciones = False
+    error_sucursales = False
 
     try:
-        peliculas = obtener_peliculas(genero=genero)
-        generos = sorted(set(
-            p["genero"] for p in peliculas
-            if "genero" in p and p["genero"]
-        ))
-        sucursales = obtener_sucursales()
-
+        catalogo = obtener_peliculas()
+        generos = sorted({
+            pelicula.get("genero")
+            for pelicula in catalogo
+            if isinstance(pelicula, dict) and pelicula.get("genero")
+        })
+        peliculas = [
+            pelicula for pelicula in catalogo
+            if not genero or pelicula.get("genero") == genero
+        ]
     except (RequestException, RuntimeError, ValueError):
         error = True
+
+    try:
+        sucursales = obtener_sucursales()
+    except (RequestException, RuntimeError, ValueError):
+        error_sucursales = True
 
     if not error:
         try:
             funciones = obtener_funciones(
                 id_sucursal=id_sucursal,
-                fecha=fecha
+                fecha=fecha,
+                solo_vigentes=True,
             )
             cartelera = armar_cartelera(
                 peliculas,
@@ -179,8 +231,8 @@ def index():
         except (RequestException, RuntimeError, ValueError):
             error_funciones = True
             cartelera = [
-                {**p, "con_funciones": False}
-                for p in peliculas
+                {**pelicula, "con_funciones": False}
+                for pelicula in peliculas
             ]
 
     return render_template(
@@ -189,6 +241,7 @@ def index():
         generos_disponibles=generos,
         error=error,
         error_funciones=error_funciones,
+        error_sucursales=error_sucursales,
         sucursales=sucursales,
     )
 
@@ -235,7 +288,8 @@ def pelicula_detalle(id_pelicula):
         funciones = obtener_funciones(
             id_sucursal=id_sucursal,
             fecha=fecha,
-            id_pelicula=id_pelicula
+            id_pelicula=id_pelicula,
+            solo_vigentes=True,
         )
     except (RequestException, RuntimeError, ValueError):
         error_funciones = True
@@ -296,9 +350,21 @@ def detalle_compra(id_compra):
         return redirect(url_for("main.perfil"))
 
     compra = detalle["compra"]
+    # La película es un dato extra: si falla, el QR se muestra igual.
+    funcion = None
+    if detalle["entradas"]:
+        try:
+            funcion = obtener_funcion_por_id(detalle["entradas"][0]["id_funcion"])
+        except (RequestException, RuntimeError, ValueError, KeyError):
+            funcion = None
+
     qr = None
     # Solo se muestra el QR si la compra sigue pendiente de uso.
-    if compra.get("codigo_qr") and compra.get("estado_qr") == "PENDIENTE":
+    if (
+        compra.get("codigo_qr")
+        and compra.get("estado_qr") == "PENDIENTE"
+        and not compra.get("funcion_finalizada")
+    ):
         qr = generar_qr_data_url(compra["codigo_qr"])
 
     return render_template(
@@ -307,6 +373,7 @@ def detalle_compra(id_compra):
         entradas=detalle["entradas"],
         servicios=detalle["servicios"],
         qr=qr,
+        funcion=funcion,
     )
 
 

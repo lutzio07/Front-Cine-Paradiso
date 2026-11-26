@@ -76,8 +76,8 @@ def obtener_datos_backoffice_peliculas():
     return sucursales, salas, peliculas_list, funciones
 
 
-def crear_sala(id_sucursal, nombre, capacidad):
-    payload = { "nombre": nombre, "capacidad": capacidad }
+def crear_sala(id_sucursal, nombre, filas):
+    payload = {"nombre": nombre, "filas": filas}
 
     try:
         respuesta = requests.post(
@@ -238,3 +238,29 @@ def validar_codigo_qr(codigo_qr, id_funcion):
 
     except Exception as e:
         return (False, f"Error inesperado: {str(e)}", None)
+
+
+def consultar_codigo_qr(codigo_qr):
+    try:
+        url = f"{_backend_url()}/codigos-qr/{codigo_qr}"
+        headers = _get_auth_headers()
+        cookies = _get_backend_cookies()
+
+        response = requests.get(url, headers=headers, cookies=cookies, timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+            return (True, data.get("data"), None)
+        elif response.status_code == 404:
+            return (False, None, "Código QR no encontrado")
+        elif response.status_code == 403:
+            return (False, None, "Sesión expirada o sin permisos")
+        else:
+            error = _extraer_error(response, "Error al consultar el código QR")
+            return (False, None, error)
+
+    except requests.exceptions.ConnectionError:
+        return (False, None, "No se pudo conectar con el servidor")
+
+    except Exception as e:
+        return (False, None, f"Error inesperado: {str(e)}")

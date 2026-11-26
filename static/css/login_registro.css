@@ -127,3 +127,9 @@ Responsive auth
     padding: 25px;
   }
 }
+
+.forgot-password-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}

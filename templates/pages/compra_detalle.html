@@ -2,7 +2,27 @@
 
 {% block title %}Compra #{{ compra.id_compra }} — Cine Paradiso{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/compra_detalle.css') }}">
+{% endblock %}
+
 {% block content %}
+{% if qr %}
+    {% set estado = ("Vigente", "badge-green", "Presentá este código en la puerta de la sala para ingresar.") %}
+{% elif compra.estado_qr == "USADO" %}
+    {% set estado = ("Usada", "badge-outline", "Este código ya fue usado para ingresar.") %}
+{% elif compra.estado_compra == "CANCELADA" or compra.estado_qr == "CANCELADO" %}
+    {% set estado = ("Cancelada", "badge-red", "La compra fue cancelada y el código ya no es válido.") %}
+{% elif compra.estado_compra == "EXPIRADA" %}
+    {% set estado = ("Expirada", "badge-outline", "La reserva expiró antes de confirmarse, por eso no tiene código.") %}
+{% elif compra.estado_compra == "PENDIENTE" %}
+    {% set estado = ("Pendiente", "badge-outline", "El código se genera cuando se confirma la compra.") %}
+{% elif compra.funcion_finalizada %}
+    {% set estado = ("Función finalizada", "badge-outline", "La función ya finalizó, por eso el código QR ya no está disponible.") %}
+{% else %}
+    {% set estado = ("Sin código", "badge-outline", "El código no está disponible para esta compra.") %}
+{% endif %}
+
 <div class="container">
     <div class="section-head">
         <h1 class="section-title">Compra #{{ compra.id_compra }}</h1>
@@ -10,46 +30,67 @@
     </div>
 
     <div class="stack">
-        <section class="card raised" style="text-align:center">
-            <h2>Tu código QR</h2>
-            {% if qr %}
-            <p class="muted">Presentalo en la puerta de la sala para ingresar.</p>
-            <img src="{{ qr }}" alt="Código QR de la compra #{{ compra.id_compra }}"
-                 width="240" height="240"
-                 style="display:block;margin:16px auto;background:#fff;padding:14px;border-radius:12px">
-            <p class="muted">Código: {{ compra.codigo_qr }}</p>
-            {% elif compra.estado_qr == "USADO" %}
-            <p class="muted">Este código ya fue usado para ingresar.</p>
-            {% elif compra.estado_compra == "CANCELADA" or compra.estado_qr == "CANCELADO" %}
-            <p class="muted">La compra fue cancelada y el código ya no es válido.</p>
-            {% elif compra.estado_compra == "EXPIRADA" %}
-            <p class="muted">La reserva expiró antes de confirmarse, por eso esta compra no tiene código.</p>
-            {% elif compra.estado_compra == "PENDIENTE" %}
-            <p class="muted">La compra todavía no fue confirmada. El código se genera al confirmarla.</p>
-            {% else %}
-            <p class="muted">El código no está disponible para esta compra.</p>
-            {% endif %}
+        <section class="ticket">
+            <div class="ticket-main">
+                <span class="badge {{ estado[1] }}">{{ estado[0] }}</span>
+                {% if funcion %}
+                <h2 class="ticket-title">{{ funcion.titulo_pelicula }}</h2>
+                <ul class="ticket-info">
+                    <li>
+                        <span class="material-symbols-outlined">location_on</span>
+                        <span>{{ funcion.nombre_sucursal }} · {{ funcion.nombre_sala }}</span>
+                    </li>
+                    <li>
+                        <span class="material-symbols-outlined">event</span>
+                        <span>{{ funcion.fecha_hora|datetimeformat("%d/%m/%Y") }} · <strong>{{ funcion.fecha_hora|datetimeformat("%H:%M") }} hs</strong></span>
+                    </li>
+                    <li>
+                        <span class="material-symbols-outlined">schedule</span>
+                        <span>{{ funcion.duracion_min }} min</span>
+                    </li>
+                    <li>
+                        <span class="material-symbols-outlined">event_seat</span>
+                        <span class="ticket-seats">
+                            {% for entrada in entradas %}<span class="badge">{{ entrada.fila }}{{ entrada.numero }}</span>{% endfor %}
+                        </span>
+                    </li>
+                </ul>
+                {% else %}
+                <h2 class="ticket-title">Tu entrada</h2>
+                <p class="muted">No pudimos cargar los datos de la función.</p>
+                {% endif %}
+            </div>
+
+            <div class="ticket-stub">
+                {% if qr %}
+                <img class="ticket-qr" src="{{ qr }}" alt="Código QR de la compra #{{ compra.id_compra }}">
+                <p class="muted">{{ estado[2] }}</p>
+                <p class="muted ticket-code">{{ compra.codigo_qr }}</p>
+                {% else %}
+                <span class="material-symbols-outlined">qr_code_2</span>
+                <p class="muted">{{ estado[2] }}</p>
+                {% endif %}
+            </div>
         </section>
 
         <section class="card soft">
             <div class="card-header">
-                <h2>Detalle</h2>
+                <h2>Resumen de la compra</h2>
                 <span class="badge badge-outline">{{ compra.fecha_compra|datetimeformat("%d/%m/%Y %H:%M") }}</span>
             </div>
             <div class="table-wrap">
                 <table class="data-table">
                     <thead>
-                        <tr><th>Entrada</th><th>Butaca</th><th>Precio</th></tr>
+                        <tr><th>Butaca</th><th>Precio</th></tr>
                     </thead>
                     <tbody>
                         {% for entrada in entradas %}
                         <tr>
-                            <td>Función #{{ entrada.id_funcion }}</td>
                             <td>{{ entrada.fila }}{{ entrada.numero }}</td>
                             <td>{{ entrada.precio|pesos }}</td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="3">Esta compra ya no tiene entradas.</td></tr>
+                        <tr><td colspan="2">Esta compra ya no tiene entradas.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -62,7 +103,7 @@
                 {% endfor %}
             </ul>
             {% endif %}
-            <p style="margin-top:16px"><strong>Total: {{ compra.monto_total|pesos }}</strong></p>
+            <p class="purchase-total"><strong>Total: {{ compra.monto_total|pesos }}</strong></p>
         </section>
     </div>
 </div>

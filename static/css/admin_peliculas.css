@@ -93,6 +93,81 @@ Boton de eliminacion directa en tablas
   background-color: #bd2130;
 }
 
+/* Configuración de filas al crear una sala */
+.crear-sala-card .sala-filas-label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.crear-sala-card .sala-filas-ayuda {
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.crear-sala-card .sala-filas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.crear-sala-card .sala-fila {
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.crear-sala-card .sala-fila-titulo {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.crear-sala-card .sala-fila-campos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.crear-sala-card .sala-fila-campos .field {
+  min-width: 0;
+  font-size: .8rem;
+}
+
+.crear-sala-card .sala-fila-campos .input {
+  width: 100%;
+  margin-top: 5px;
+}
+
+.crear-sala-card .sala-quitar-fila {
+  margin-top: 10px;
+}
+
+.crear-sala-card .sala-quitar-fila[hidden],
+.crear-sala-card .sala-error[hidden] {
+  display: none;
+}
+
+.crear-sala-card .sala-capacidad {
+  margin: 12px 0 0;
+  font-weight: 600;
+}
+
+.crear-sala-card .sala-error {
+  color: #ff9d9d;
+  margin: 10px 0 0;
+}
+
+@media (max-width: 520px) {
+  .crear-sala-card .sala-fila-campos {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* 
 Responsividad 
 */
@@ -104,10 +179,39 @@ Responsividad
 
 @media (max-width: 620px) {
   .card {
-    padding: 17px;
+    padding: 12px;
+  }
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .card-header h2 {
+    font-size: 1.1rem;
   }
   .data-table th, .data-table td {
-    padding: 10px 12px;
+    padding: 8px 6px;
+    font-size: 0.78rem;
+  }
+  .data-table th {
+    font-size: 0.65rem;
+  }
+  .table-wrap {
+    border-radius: 8px;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .input,
+  .select,
+  .textarea {
+    padding: 9px 10px;
+    font-size: 0.9rem;
+  }
+  .btn {
+    min-height: 38px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
   }
 }
 
