@@ -1,0 +1,337 @@
+{% extends 'base.html' %}
+{% set section = 'admin' %}
+{% set active = 'validador' %}
+
+{% block title %}Validar QR | Backoffice Cine Paradiso{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_validador.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Control de Acceso</span>
+        <h1>Validación de Acceso QR</h1>
+        <p>Ingresá el código QR y seleccioná la función para verificar el acceso.</p>
+    </div>
+</div>
+
+{% if tipo %}
+    {% if tipo == 'permitido' %}
+    <div class="notice success" role="status" style="margin-bottom:18px">
+        <strong style="font-size:1.4rem">Acceso Permitido</strong>
+        <p style="margin-top:8px">{{ mensaje }}</p>
+        {% if datos %}
+            {% if datos.get('pelicula_titulo') %}
+            <p><strong>Película:</strong> {{ datos.pelicula_titulo }}</p>
+            {% endif %}
+            {% if datos.get('sala_nombre') %}
+            <p><strong>Sala:</strong> {{ datos.sala_nombre }}</p>
+            {% endif %}
+            {% if datos.get('fecha_hora') %}
+            <p><strong>Fecha y hora:</strong> {{ datos.fecha_hora }}</p>
+            {% endif %}
+            {% if datos.get('butacas') %}
+            <p><strong>Butacas:</strong> {{ datos.butacas | join(', ') }}</p>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="notice" role="alert" style="margin-bottom:18px;border-left-color:#7f1d1d;background:#450a0a;color:#fecaca">
+        <strong style="font-size:1.4rem">Acceso Denegado</strong>
+        <p style="margin-top:8px">{{ mensaje }}</p>
+    </div>
+    {% endif %}
+{% endif %}
+
+<div style="max-width:600px">
+    <!-- Botón de escaneo QR -->
+    <button type="button" id="btn-camara" class="btn btn-secondary btn-scan">
+        <span class="material-symbols-outlined">qr_code_scanner</span>
+        Escanear código QR
+    </button>
+
+    <!-- Contenedor de la cámara -->
+    <div id="qr-scanner" class="qr-scanner-container">
+        <video id="qr-video" autoplay playsinline></video>
+        <canvas id="qr-canvas"></canvas>
+        <div id="qr-status" class="qr-scanner-status" style="display:none;"></div>
+    </div>
+
+    <!-- Panel de resumen del QR escaneado -->
+    <div id="qr-resumen" class="qr-resumen{% if qr_consultado %} active{% endif %}">
+        <h3>Información del QR</h3>
+        <div class="qr-resumen-grid">
+            <div class="qr-resumen-item">
+                <label>Película</label>
+                <span id="resumen-pelicula">{{ qr_consultado.get('pelicula_titulo') or '—' if qr_consultado else '—' }}</span>
+            </div>
+            <div class="qr-resumen-item">
+                <label>Sala</label>
+                <span id="resumen-sala">{{ qr_consultado.get('sala_nombre') or '—' if qr_consultado else '—' }}</span>
+            </div>
+            <div class="qr-resumen-item">
+                <label>Fecha y hora</label>
+                <span id="resumen-hora">{% if qr_consultado and qr_consultado.get('fecha_hora') %}{{ qr_consultado.get('fecha_hora')|datetimeformat }}{% else %}—{% endif %}</span>
+            </div>
+            <div class="qr-resumen-item">
+                <label>Estado</label>
+                <span id="resumen-estado">{{ qr_consultado.get('estado_qr') or '—' if qr_consultado else '—' }}</span>
+            </div>
+            <div class="qr-resumen-item full-width">
+                <label>Butacas</label>
+                <span id="resumen-butacas">{% if qr_consultado and qr_consultado.get('butacas') %}{{ qr_consultado.get('butacas')|join(', ') }}{% else %}—{% endif %}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensaje de error del QR -->
+    {% if error_consulta %}
+    <div id="qr-resumen-error" class="qr-resumen-error active" role="alert">{{ error_consulta }}</div>
+    {% else %}
+    <div id="qr-resumen-error" class="qr-resumen-error"></div>
+    {% endif %}
+
+    <!-- Rellenar manualmente -->
+    <div class="manual-input-accordion">
+        <button type="button" class="accordion-toggle{% if mostrar_manual %} active{% endif %}" id="btn-manual">
+            <span class="accordion-title">COMPLETAR MANUALMENTE</span>
+            <span class="accordion-icon material-symbols-outlined">expand_more</span>
+        </button>
+        <div class="accordion-content{% if mostrar_manual %} active{% endif %}" id="accordion-content">
+            <form method="POST" action="{{ url_for('admin.validador_post') }}" id="form-validador" style="display:flex;flex-direction:column;gap:18px">
+                <div>
+                    <label for="codigo_qr" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
+                        Código QR
+                    </label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="codigo_qr"
+                        name="codigo_qr"
+                        value="{{ codigo_qr or '' }}"
+                        placeholder="Ingresá o escaneá el código QR"
+                        autocomplete="off"
+                        style="font-size:1.2rem;padding:12px"
+                    >
+                </div>
+
+                <div>
+                    <label for="id_funcion" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
+                        Función
+                    </label>
+                    <select class="form-select" id="id_funcion" name="id_funcion" required style="font-size:1.1rem;padding:10px">
+                        <option value="">-- Seleccioná una función --</option>
+                        {% for func in funciones %}
+                        <option value="{{ func.id_funcion }}"{% if func.id_funcion|string == id_funcion_seleccionada|string %} selected{% endif %}>
+                            {{ func.titulo_pelicula | default('Película #' ~ func.id_pelicula) }} — {{ func.nombre_sala | default('Sala #' ~ func.id_sala) }} — {{ func.fecha_hora|datetimeformat }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" id="btn-consultar" name="accion" value="consultar" formnovalidate class="btn btn-secondary">
+                    Consultar QR
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <button type="submit" form="form-validador" id="btn-validar" name="accion" value="validar" class="btn btn-primary" style="font-size:1.1rem;padding:12px;margin-top:18px;display:none">
+        Validar acceso
+    </button>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- Biblioteca jsQR desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+<script>
+(function() {
+  const btnCamara = document.getElementById('btn-camara');
+  const scannerContainer = document.getElementById('qr-scanner');
+  const video = document.getElementById('qr-video');
+  const canvas = document.getElementById('qr-canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const statusDiv = document.getElementById('qr-status');
+  const codigoInput = document.getElementById('codigo_qr');
+  const selectFuncion = document.getElementById('id_funcion');
+  const btnConsultar = document.getElementById('btn-consultar');
+
+  let scanning = false;
+  let stream = null;
+  let animationId = null;
+  let lastScanTime = 0;
+  const SCAN_INTERVAL = 100;
+
+  function showStatus(message, type) {
+    statusDiv.style.display = 'block';
+    statusDiv.textContent = message;
+    statusDiv.className = 'qr-scanner-status ' + (type || '');
+  }
+
+  function hideStatus() {
+    statusDiv.style.display = 'none';
+  }
+
+  function stopCamera() {
+    scanning = false;
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+    }
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+    video.srcObject = null;
+    scannerContainer.classList.remove('active');
+    btnCamara.innerHTML = '<span class="material-symbols-outlined">qr_code_scanner</span> Escanear código QR';
+    hideStatus();
+  }
+
+  function scanFrame(timestamp) {
+    if (!scanning) return;
+
+    // Limitar frecuencia de escaneo
+    if (timestamp - lastScanTime < SCAN_INTERVAL) {
+      animationId = requestAnimationFrame(scanFrame);
+      return;
+    }
+    lastScanTime = timestamp;
+
+    // Dibujar frame del video en el canvas
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      // Intentar decodificar
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (code) {
+        // Código QR detectado
+        scanning = false;
+        stopCamera();
+
+        // Rellenar el campo con el código
+        codigoInput.value = code.data;
+        codigoInput.focus();
+
+        // Mostrar mensaje de éxito
+        showStatus('✓ Código detectado: ' + code.data, 'success');
+
+        // Reproducir un sonido breve (opcional)
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.frequency.value = 800;
+          gainNode.gain.value = 0.1;
+          oscillator.start();
+          oscillator.stop(audioCtx.currentTime + 0.1);
+        } catch(e) {}
+
+        // Consultar mediante el envío estándar del formulario
+        btnConsultar.click();
+
+        return;
+      }
+    }
+
+    animationId = requestAnimationFrame(scanFrame);
+  }
+
+  async function startCamera() {
+    if (scanning) {
+      stopCamera();
+      return;
+    }
+
+    // Limpiar resultados anteriores antes de iniciar escaneo
+    document.getElementById('qr-resumen-error').classList.remove('active');
+    document.getElementById('qr-resumen').classList.remove('active');
+
+    // Limpiar mensajes de validación del servidor ("Acceso Permitido"/"Denegado")
+    document.querySelectorAll('.notice').forEach(function(n) { n.remove(); });
+
+    try {
+      showStatus('Solicitando permiso de cámara...');
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' } // Preferir cámara trasera
+      });
+
+      video.srcObject = stream;
+      await video.play();
+
+      scanning = true;
+      scannerContainer.classList.add('active');
+      btnCamara.innerHTML = '<span class="scan-indicator"></span> Detener cámara';
+      showStatus('Escaneando... Apuntá la cámara al código QR');
+
+      animationId = requestAnimationFrame(scanFrame);
+
+    } catch (err) {
+      console.error('Error al acceder a la cámara:', err);
+      stopCamera();
+
+      let message = 'No se pudo acceder a la cámara.';
+      if (err.name === 'NotAllowedError') {
+        message = 'Permiso de cámara denegado. Habilitalo en la configuración del navegador.';
+      } else if (err.name === 'NotFoundError') {
+        message = 'No se encontró una cámara en el dispositivo.';
+      }
+      showStatus(message, 'error');
+    }
+  }
+
+  // Event listener para el botón
+  btnCamara.addEventListener('click', startCamera);
+
+  // Ocultar el resumen anterior al editar el código; la consulta requiere enviar el formulario.
+  codigoInput.addEventListener('input', function() {
+    document.getElementById('qr-resumen-error').classList.remove('active');
+    document.getElementById('qr-resumen').classList.remove('active');
+  });
+
+  // Rellenar manualmente
+  const btnManual = document.getElementById('btn-manual');
+  const accordionContent = document.getElementById('accordion-content');
+  btnManual.addEventListener('click', function() {
+    const isActive = accordionContent.classList.contains('active');
+    if (isActive) {
+      accordionContent.classList.remove('active');
+      btnManual.classList.remove('active');
+    } else {
+      accordionContent.classList.add('active');
+      btnManual.classList.add('active');
+    }
+  });
+
+  // Mostrar/ocultar botón "Validar acceso" según campos completados
+  const btnValidar = document.getElementById('btn-validar');
+
+  function checkFormCompleteness() {
+    const hasCodigo = codigoInput.value.trim().length > 0;
+    const hasFuncion = selectFuncion.value !== '';
+    if (hasCodigo && hasFuncion) {
+      btnValidar.style.display = 'inline-block';
+    } else {
+      btnValidar.style.display = 'none';
+    }
+  }
+
+  codigoInput.addEventListener('input', checkFormCompleteness);
+
+  selectFuncion.addEventListener('change', checkFormCompleteness);
+  checkFormCompleteness();
+})();
+</script>
+{% endblock %}

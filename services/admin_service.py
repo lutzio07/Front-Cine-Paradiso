@@ -76,8 +76,8 @@ def obtener_datos_backoffice_peliculas():
     return sucursales, salas, peliculas_list, funciones
 
 
-def crear_sala(id_sucursal, nombre, capacidad):
-    payload = { "nombre": nombre, "capacidad": capacidad }
+def crear_sala(id_sucursal, nombre, filas):
+    payload = {"nombre": nombre, "filas": filas}
 
     try:
         respuesta = requests.post(
@@ -147,6 +147,120 @@ def eliminar_funcion(id_funcion):
     except requests.RequestException:
         return False, "No se pudo conectar con el backend para eliminar la función."
 
+
+def buscar_peliculas_tmdb(texto_busqueda):
+    if not texto_busqueda or not texto_busqueda.strip():
+        return [], "Ingresá un título o palabra clave para buscar en TMDb."
+
+    try:
+        respuesta = requests.get(
+            f"{_backend_url()}/peliculas-externas",
+            params={"q": texto_busqueda.strip()},
+            headers=_get_auth_headers(),
+            cookies=_get_backend_cookies(),
+            timeout=10,
+        )
+
+        if not respuesta.ok:
+            return [], _extraer_error(respuesta, "No fue posible consultar TMDb.")
+
+        cuerpo = respuesta.json()
+        datos = cuerpo.get("data") if isinstance(cuerpo, dict) else None
+
+        if not isinstance(datos, list):
+            return [], "La respuesta de TMDb no contiene un listado válido."
+
+        return datos, None
+
+    except requests.RequestException as error:
+        current_app.logger.warning("Fallo consultando TMDb: %s", error)
+        return [], "Error de conexión al consultar TMDb. Verificá que el backend esté activo."
+
+
+def importar_pelicula(payload):
+    try:
+        respuesta = requests.post(
+            f"{_backend_url()}/peliculas",
+            json=payload,
+            headers=_get_auth_headers(),
+            cookies=_get_backend_cookies(),
+            timeout=10,
+        )
+
+        if respuesta.status_code == 201:
+            titulo = payload.get("titulo", "Película")
+            return True, f"Película '{titulo}' importada exitosamente al catálogo."
+
+        if respuesta.status_code == 409:
+            titulo = payload.get("titulo", "Película")
+            return False, f"La película '{titulo}' ya se encuentra registrada en el catálogo."
+
+        return False, f"Error {respuesta.status_code}: {_extraer_error(respuesta, 'No se pudo importar la película.')}"
+
+    except requests.RequestException:
+        return False, "No se pudo conectar con el backend para importar la película."
+
+
 def obtener_servicios():
-    servicioslist,  = consultar_lista("/servicios", "servicios")
+    servicios_list, _ = consultar_lista("/servicios", "servicios")
     return servicios_list
+
+
+def validar_codigo_qr(codigo_qr, id_funcion):
+    try:
+        url = f"{_backend_url()}/codigos-qr/{codigo_qr}"
+        headers = _get_auth_headers()
+        cookies = _get_backend_cookies()
+        payload = {"id_funcion": id_funcion}
+
+        response = requests.patch(url, json=payload, headers=headers, cookies=cookies, timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+            return (True, "Acceso permitido", data)
+        elif response.status_code == 400:
+            error = _extraer_error(response, "Codigo QR invalido")
+            return (False, error, None)
+        elif response.status_code == 403:
+            error = _extraer_error(response, "Codigo QR ya utilizado")
+            return (False, error, None)
+        elif response.status_code == 404:
+            return (False, "Código QR no encontrado", None)
+        elif response.status_code == 409:
+            error = _extraer_error(response, "Codigo ya usado o no valido para esta funcion")
+            return (False, error, None)
+        else:
+            error = _extraer_error(response, "Error al validar el codigo QR")
+            return (False, error, None)
+
+    except requests.exceptions.ConnectionError:
+        return (False, "No se pudo conectar con el servidor", None)
+
+    except Exception as e:
+        return (False, f"Error inesperado: {str(e)}", None)
+
+
+def consultar_codigo_qr(codigo_qr):
+    try:
+        url = f"{_backend_url()}/codigos-qr/{codigo_qr}"
+        headers = _get_auth_headers()
+        cookies = _get_backend_cookies()
+
+        response = requests.get(url, headers=headers, cookies=cookies, timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+            return (True, data.get("data"), None)
+        elif response.status_code == 404:
+            return (False, None, "Código QR no encontrado")
+        elif response.status_code == 403:
+            return (False, None, "Sesión expirada o sin permisos")
+        else:
+            error = _extraer_error(response, "Error al consultar el código QR")
+            return (False, None, error)
+
+    except requests.exceptions.ConnectionError:
+        return (False, None, "No se pudo conectar con el servidor")
+
+    except Exception as e:
+        return (False, None, f"Error inesperado: {str(e)}")

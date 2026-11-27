@@ -8,17 +8,12 @@
 {% endif %}
 {% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pelicula_detalle.css') }}">
+{% endblock %}
+
 {% block content %}
 <section class="container detalle-pelicula">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-        <div class="notice {% if category == 'success' %}success{% endif %}" role="status" style="margin-bottom:16px">
-            {{ message }}
-        </div>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
     {% if error %}
         <p class="empty-state">No pudimos obtener la información de la película.</p>
         <a href="{{ url_for('main.index') }}" class="btn btn-quiet">Volver a la cartelera</a>

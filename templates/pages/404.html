@@ -2,10 +2,14 @@
 
 {% block title %}Página no encontrada — Cine Paradiso{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/404.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="container" style="text-align: center; padding: 5rem 2rem;">
-    <h1 style="font-size: 4rem; color: var(--red-bright);">404</h1>
-    <p style="color: var(--muted); margin-bottom: 2rem;">La película o página solicitada no se encuentra disponible.</p>
+<div class="container">
+    <h1>404</h1>
+    <p>La película o página solicitada no se encuentra disponible.</p>
     <a href="{{ url_for('main.index') }}" class="btn btn-primary">Volver al Inicio</a>
 </div>
 {% endblock %}

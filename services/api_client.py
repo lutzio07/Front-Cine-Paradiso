@@ -87,8 +87,10 @@ def obtener_pelicula_por_id(id_pelicula):
     return response.get("data")
 
 
-def obtener_funciones(id_pelicula=None, id_sucursal=None, fecha=None):
+def obtener_funciones(id_pelicula=None, id_sucursal=None, fecha=None, solo_vigentes=False):
     params = {}
+    if solo_vigentes:
+        params['vigentes'] = 'true'
     if id_sucursal:
         params['id_sucursal'] = id_sucursal
     if fecha:
@@ -146,7 +148,10 @@ def crear_compra(datos, cookie_backend):
 
     response.raise_for_status()
 
-    return respuesta
+    if respuesta.get("status") != "success":
+        raise RuntimeError(respuesta.get("message", "No se pudo crear la compra."))
+
+    return respuesta.get("data")
 
 
 def obtener_funcion_por_id(id_funcion):

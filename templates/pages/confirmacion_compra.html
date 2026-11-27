@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar compra - Cine Paradiso{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/confirmacion_compra.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="container confirmacion-compra-page">
+    <div class="booking-breadcrumb">
+        <a href="{{ url_for('main.seleccionar_servicios') }}" class="breadcrumb-back">
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+            <span>Volver a servicios</span>
+        </a>
+        <nav class="breadcrumb-steps" aria-label="Progreso de compra">
+            <span class="step done">01 / Butacas</span>
+            <span class="step-divider" aria-hidden="true">/</span>
+            <span class="step done">02 / Servicios</span>
+            <span class="step-divider" aria-hidden="true">/</span>
+            <span class="step active" aria-current="step">03 / Confirmación</span>
+        </nav>
+    </div>
+
+    <header class="function-banner card raised confirmation-banner">
+        <div class="confirmation-movie-icon" aria-hidden="true">
+            <span class="material-symbols-outlined">movie</span>
+        </div>
+        <div class="confirmation-function-info">
+            <span class="confirmation-eyebrow">Revisá los detalles de tu función</span>
+            <h1 class="function-title">{{ compra_actual.titulo_pelicula or 'Tu función' }}</h1>
+            <div class="confirmation-metadata">
+                {% if compra_actual.get('nombre_sucursal') %}
+                <span><span class="material-symbols-outlined" aria-hidden="true">pin_drop</span>{{ compra_actual.nombre_sucursal }}</span>
+                {% endif %}
+                {% if compra_actual.get('nombre_sala') %}
+                <span><span class="material-symbols-outlined" aria-hidden="true">theaters</span>{{ compra_actual.nombre_sala }}</span>
+                {% endif %}
+                {% if compra_actual.get('fecha_hora') %}
+                <span><span class="material-symbols-outlined" aria-hidden="true">schedule</span>{{ compra_actual.fecha_hora | datetimeformat }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="confirmation-seat-count">
+            <span>Butacas</span>
+            <strong>{{ compra_pendiente.asientos_ids | length }}</strong>
+            <span>seleccionadas</span>
+        </div>
+    </header>
+
+    <div class="confirmation-layout">
+        <div class="confirmation-details stack">
+            <section class="card confirmation-card" aria-labelledby="tickets-title">
+                <div class="card-header">
+                    <div class="confirmation-card-title">
+                        <span class="material-symbols-outlined text-accent" aria-hidden="true">confirmation_number</span>
+                        <h2 id="tickets-title">Tus entradas</h2>
+                    </div>
+                    <span class="badge badge-outline">{{ compra_pendiente.asientos_ids | length }} entradas</span>
+                </div>
+
+                <div class="confirmation-seat-list" aria-label="Butacas seleccionadas">
+                    {% if compra_actual.get('asientos_etiquetas') %}
+                        {% for asiento in compra_actual.asientos_etiquetas %}
+                        <span class="confirmation-seat-chip">
+                            <span class="material-symbols-outlined" aria-hidden="true">event_seat</span>{{ asiento }}
+                        </span>
+                        {% endfor %}
+                    {% else %}
+                        {% for asiento_id in compra_pendiente.asientos_ids %}
+                        <span class="confirmation-seat-chip">
+                            <span class="material-symbols-outlined" aria-hidden="true">event_seat</span>#{{ asiento_id }}
+                        </span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="confirmation-detail-row">
+                    <span>Precio por entrada</span>
+                    <strong>{{ compra_actual.precio_unitario | default(0) | pesos }}</strong>
+                </div>
+                <div class="confirmation-detail-row confirmation-subtotal">
+                    <span>Subtotal de entradas</span>
+                    <strong>{{ subtotal_entradas | pesos }}</strong>
+                </div>
+            </section>
+
+            <section class="card confirmation-card" aria-labelledby="services-title">
+                <div class="card-header">
+                    <div class="confirmation-card-title">
+                        <span class="material-symbols-outlined text-accent" aria-hidden="true">room_service</span>
+                        <h2 id="services-title">Servicios adicionales</h2>
+                    </div>
+                    {% if servicios %}
+                    <span class="badge badge-outline">{{ servicios | length }} seleccionados</span>
+                    {% endif %}
+                </div>
+
+                {% if servicios %}
+                    <div class="confirmation-service-list">
+                        {% for sv in servicios %}
+                        <div class="confirmation-service-row">
+                            <div>
+                                <strong>{{ sv.nombre }}</strong>
+                                <span>{{ sv.cantidad }} × {{ sv.precio_unitario | pesos }}</span>
+                            </div>
+                            <strong>{{ sv.subtotal | pesos }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="confirmation-detail-row confirmation-subtotal">
+                        <span>Subtotal de servicios</span>
+                        <strong>{{ subtotal_servicios | pesos }}</strong>
+                    </div>
+                {% else %}
+                    <p class="confirmation-empty-services">
+                        <span class="material-symbols-outlined" aria-hidden="true">info</span>
+                        No agregaste servicios adicionales a esta compra.
+                    </p>
+                {% endif %}
+            </section>
+        </div>
+
+        <aside class="card raised confirmation-summary" aria-labelledby="summary-title">
+            <div class="confirmation-card-title">
+                <span class="material-symbols-outlined text-accent" aria-hidden="true">receipt_long</span>
+                <h2 id="summary-title">Resumen de compra</h2>
+            </div>
+
+            <div class="confirmation-summary-lines">
+                <div class="confirmation-detail-row">
+                    <span>Entradas ({{ compra_pendiente.asientos_ids | length }})</span>
+                    <strong>{{ subtotal_entradas | pesos }}</strong>
+                </div>
+                <div class="confirmation-detail-row">
+                    <span>Servicios</span>
+                    <strong>{{ subtotal_servicios | pesos }}</strong>
+                </div>
+            </div>
+
+            <div class="confirmation-total">
+                <span>Total estimado</span>
+                <strong>{{ monto_estimado | pesos }}</strong>
+            </div>
+
+            <p class="confirmation-summary-note">
+                El importe final se validará al procesar la compra.
+            </p>
+
+            <form method="POST" action="{{ url_for('main.confirmar_compra_desde_vista') }}">
+                <button type="submit" class="btn btn-primary btn-full">
+                    <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                    Confirmar compra
+                </button>
+            </form>
+            <a href="{{ url_for('main.seleccionar_servicios') }}" class="btn btn-secondary btn-full">
+                Modificar servicios
+            </a>
+            <a href="{{ url_for('main.seleccion_butacas', id_funcion=compra_pendiente.id_funcion) }}" class="confirmation-back-link">
+                Volver a elegir butacas
+            </a>
+        </aside>
+    </div>
+</section>
+{% endblock %}

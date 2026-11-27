@@ -12,12 +12,16 @@ from flask import (
 )
 
 from services.admin_service import (
+    buscar_peliculas_tmdb as servicio_buscar_peliculas_tmdb,
+    consultar_codigo_qr as servicio_consultar_codigo_qr,
     crear_funcion as servicio_crear_funcion,
     crear_sala as servicio_crear_sala,
     eliminar_funcion as servicio_eliminar_funcion,
     eliminar_sala as servicio_eliminar_sala,
+    importar_pelicula as servicio_importar_pelicula,
     obtener_datos_backoffice_peliculas,
     obtener_servicios,
+    validar_codigo_qr as servicio_validar_codigo_qr, consultar_lista,
 )
 
 from services.estadisticas_service import (
@@ -72,6 +76,19 @@ def peliculas():
         obtener_datos_backoffice_peliculas()
     )
 
+    busqueda_tmdb = request.args.get("busqueda_tmdb", "").strip()
+    resultados_tmdb = []
+    if busqueda_tmdb:
+        resultados_tmdb, error_tmdb = servicio_buscar_peliculas_tmdb(busqueda_tmdb)
+        if error_tmdb:
+            flash(error_tmdb, "error")
+
+    titulos_catalogo = {
+        p.get("titulo", "").strip().lower()
+        for p in peliculas_list
+        if isinstance(p, dict) and p.get("titulo")
+    }
+
     return render_template(
         "pages/admin_cargar_pelicula.html",
         section="admin",
@@ -80,6 +97,9 @@ def peliculas():
         salas=salas,
         peliculas=peliculas_list,
         funciones=funciones,
+        busqueda_tmdb=busqueda_tmdb,
+        resultados_tmdb=resultados_tmdb,
+        titulos_catalogo=titulos_catalogo,
     )
 
 
@@ -247,10 +267,140 @@ def validador():
         )
         return redirect(url_for("auth.vista_login"))
 
+    funciones, _ = consultar_lista("/funciones", "funciones")
+
     return render_template(
         "pages/admin_validador.html",
         section="admin",
         active="validador",
+        funciones=funciones,
+        resultado=None,
+        mensaje=None,
+        datos=None,
+        tipo=None,
+        qr_consultado=None,
+        error_consulta=None,
+        codigo_qr="",
+        id_funcion_seleccionada="",
+        mostrar_manual=False,
+    )
+
+@admin_bp.route("/validador", methods=["POST"], endpoint="validador_post")
+def validador_post():
+    if not es_admin():
+        flash("Acceso no autorizado.", "error")
+        return redirect(url_for("auth.vista_login"))
+
+    codigo_qr = request.form.get("codigo_qr", "").strip()
+    id_funcion_raw = request.form.get("id_funcion", "").strip()
+    accion = request.form.get("accion", "validar")
+
+    if accion == "consultar":
+        if codigo_qr:
+            consulta_exitosa, qr_consultado, error_consulta = (
+                servicio_consultar_codigo_qr(codigo_qr)
+            )
+            if not consulta_exitosa:
+                qr_consultado = None
+        else:
+            qr_consultado = None
+            error_consulta = "Ingresá el código QR."
+
+        funciones, _ = consultar_lista("/funciones", "funciones")
+        id_funcion_seleccionada = (
+            qr_consultado.get("id_funcion") if qr_consultado else id_funcion_raw
+        )
+
+        return render_template(
+            "pages/admin_validador.html",
+            section="admin",
+            active="validador",
+            funciones=funciones,
+            resultado=None,
+            mensaje=None,
+            datos=None,
+            tipo=None,
+            qr_consultado=qr_consultado,
+            error_consulta=error_consulta,
+            codigo_qr=codigo_qr,
+            id_funcion_seleccionada=id_funcion_seleccionada or "",
+            mostrar_manual=True,
+        )
+
+    if not codigo_qr:
+        funciones, _ = consultar_lista("/funciones", "funciones")
+        return render_template(
+            "pages/admin_validador.html",
+            section="admin",
+            active="validador",
+            funciones=funciones,
+            resultado=False,
+            mensaje="Ingresá el código QR.",
+            datos=None,
+            tipo="denegado",
+            qr_consultado=None,
+            error_consulta=None,
+            codigo_qr=codigo_qr,
+            id_funcion_seleccionada=id_funcion_raw,
+            mostrar_manual=True,
+        )
+
+    if not id_funcion_raw:
+        funciones, _ = consultar_lista("/funciones", "funciones")
+        return render_template(
+            "pages/admin_validador.html",
+            section="admin",
+            active="validador",
+            funciones=funciones,
+            resultado=False,
+            mensaje="Seleccioná una función.",
+            datos=None,
+            tipo="denegado",
+            qr_consultado=None,
+            error_consulta=None,
+            codigo_qr=codigo_qr,
+            id_funcion_seleccionada=id_funcion_raw,
+            mostrar_manual=True,
+        )
+
+    try:
+        id_funcion = int(id_funcion_raw)
+    except ValueError:
+        funciones, _ = consultar_lista("/funciones", "funciones")
+        return render_template(
+            "pages/admin_validador.html",
+            section="admin",
+            active="validador",
+            funciones=funciones,
+            resultado=False,
+            mensaje="El ID de función debe ser un número válido.",
+            datos=None,
+            tipo="denegado",
+            qr_consultado=None,
+            error_consulta=None,
+            codigo_qr=codigo_qr,
+            id_funcion_seleccionada=id_funcion_raw,
+            mostrar_manual=True,
+        )
+
+    exito, mensaje_servicio, datos = servicio_validar_codigo_qr(codigo_qr, id_funcion)
+
+    funciones, _ = consultar_lista("/funciones", "funciones")
+
+    return render_template(
+        "pages/admin_validador.html",
+        section="admin",
+        active="validador",
+        funciones=funciones,
+        resultado=exito,
+        mensaje=mensaje_servicio,
+        datos=datos,
+        tipo="permitido" if exito else "denegado",
+        qr_consultado=None,
+        error_consulta=None,
+        codigo_qr=codigo_qr,
+        id_funcion_seleccionada=id_funcion_raw,
+        mostrar_manual=True,
     )
 
 
@@ -270,19 +420,51 @@ def crear_sala():
 
     id_sucursal = request.form.get("id_sucursal", "").strip()
     nombre = request.form.get("nombre", "").strip()
+    izquierdas = request.form.getlist("izquierda")
+    centros = request.form.getlist("centro")
+    derechas = request.form.getlist("derecha")
 
-    try:
-        capacidad = int(request.form.get("capacidad", ""))
+    error = None
+    filas = []
+    capacidad = 0
 
-    except ValueError:
-        flash("La capacidad debe ser un número entero.", "error")
+    if not id_sucursal.isascii() or not id_sucursal.isdecimal() or int(id_sucursal) <= 0:
+        error = "Seleccioná una sucursal válida."
+    elif not nombre or len(nombre) > 50:
+        error = "El nombre de la sala debe tener entre 1 y 50 caracteres."
+    elif not izquierdas or len(izquierdas) != len(centros) or len(centros) != len(derechas):
+        error = "Indicá los tres bloques de cada fila."
+    elif len(izquierdas) > 40:
+        error = "La sala no puede superar las 200 butacas."
+    else:
+        for numero_fila, valores in enumerate(zip(izquierdas, centros, derechas), start=1):
+            if any(not valor.strip().isascii() or not valor.strip().isdecimal() for valor in valores):
+                error = f"La fila {numero_fila} debe contener números enteros no negativos."
+                break
+
+            izquierdo, central, derecho = (int(valor.strip()) for valor in valores)
+            total_fila = izquierdo + central + derecho
+
+            if izquierdo > 5 or derecho > 5:
+                error = f"Los bloques laterales de la fila {numero_fila} admiten hasta 5 butacas."
+            elif central < 1:
+                error = f"El bloque central de la fila {numero_fila} debe tener al menos una butaca."
+            elif total_fila < 5:
+                error = f"La fila {numero_fila} debe tener al menos 5 butacas."
+            elif capacidad + total_fila > 200:
+                error = "La sala no puede superar las 200 butacas."
+
+            if error:
+                break
+
+            filas.append({"bloques": [izquierdo, central, derecho]})
+            capacidad += total_fila
+
+    if error:
+        flash(error, "error")
         return redirect(url_for("admin.peliculas"))
 
-    exito, mensaje = servicio_crear_sala(
-        id_sucursal,
-        nombre,
-        capacidad
-    )
+    exito, mensaje = servicio_crear_sala(id_sucursal, nombre, filas)
 
     if exito:
         flash(mensaje, "success")
@@ -404,5 +586,54 @@ def eliminar_funcion(id_funcion):
         flash(mensaje, "success")
     else:
         flash(mensaje, "error")
+
+    return redirect(url_for("admin.peliculas"))
+
+
+@admin_bp.route("/peliculas", methods=["POST"], endpoint="importar_pelicula")
+def importar_pelicula():
+
+    if not es_admin():
+        flash("Acceso no autorizado.", "error")
+        return redirect(url_for("auth.vista_login"))
+
+    if not session.get("backend_session"):
+        flash(
+            "Falta la sesión del backend. Iniciá sesión nuevamente.",
+            "error"
+        )
+        return redirect(url_for("admin.peliculas"))
+
+    titulo = request.form.get("titulo", "").strip()
+    if not titulo:
+        flash("El título de la película es obligatorio.", "error")
+        return redirect(url_for("admin.peliculas"))
+
+    try:
+        duracion_min = int(request.form.get("duracion_min", 120))
+        if duracion_min <= 0:
+            duracion_min = 120
+    except (ValueError, TypeError):
+        duracion_min = 120
+
+    payload = {
+        "titulo": titulo,
+        "sinopsis": request.form.get("sinopsis", "").strip() or None,
+        "poster_url": request.form.get("poster_url", "").strip() or None,
+        "genero": request.form.get("genero", "").strip() or "General",
+        "duracion_min": duracion_min,
+        "clasificacion": request.form.get("clasificacion", "").strip() or "ATP",
+    }
+
+    exito, mensaje = servicio_importar_pelicula(payload)
+
+    if exito:
+        flash(mensaje, "success")
+    else:
+        flash(mensaje, "error")
+
+    busqueda_actual = request.form.get("busqueda_tmdb", "").strip()
+    if busqueda_actual:
+        return redirect(url_for("admin.peliculas", busqueda_tmdb=busqueda_actual))
 
     return redirect(url_for("admin.peliculas"))

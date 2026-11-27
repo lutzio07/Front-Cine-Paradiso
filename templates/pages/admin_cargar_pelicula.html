@@ -30,6 +30,7 @@
 
 <div class="two-cols">
     <div style="display: flex; flex-direction: column; gap: 24px;">
+        {% include 'components/_form_importar_pelicula.html' %}
         {% include 'components/_form_crear_sala.html' %}
         {% include 'components/_form_crear_funcion.html' %}
     </div>
@@ -42,6 +43,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/crear_sala.js') }}" defer></script>
 <script>
     const selectorSucursal = document.getElementById('funcion-sucursal');
     const selectorSala = document.getElementById('funcion-sala');
