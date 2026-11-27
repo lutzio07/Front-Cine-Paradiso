@@ -101,7 +101,7 @@
             <span class="accordion-icon material-symbols-outlined">expand_more</span>
         </button>
         <div class="accordion-content{% if mostrar_manual %} active{% endif %}" id="accordion-content">
-            <form method="POST" action="/admin/validador" id="form-validador" style="display:flex;flex-direction:column;gap:18px">
+            <form method="POST" action="{{ url_for('admin.validador_post') }}" id="form-validador" style="display:flex;flex-direction:column;gap:18px">
                 <div>
                     <label for="codigo_qr" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
                         Código QR

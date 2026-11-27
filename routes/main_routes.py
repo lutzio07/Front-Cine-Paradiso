@@ -59,6 +59,10 @@ def vista_confirmacion():
         flash("Iniciá sesión para continuar con la compra.", "warning")
         return redirect(url_for("auth.vista_login"))
 
+    if session.get("rol") != "CLIENTE":
+        flash("Solo los clientes pueden realizar compras.", "danger")
+        return redirect(url_for("main.index"))
+
     compra_pendiente = session.get("compra_pendiente")
     if not compra_pendiente:
         flash("Primero tenés que seleccionar las butacas.", "warning")
@@ -108,6 +112,10 @@ def guardar_servicios_y_confirmar():
     if not session.get("backend_session"):
         flash("Iniciá sesión para continuar con la compra.", "warning")
         return redirect(url_for("auth.vista_login"))
+
+    if session.get("rol") != "CLIENTE":
+        flash("Solo los clientes pueden realizar compras.", "danger")
+        return redirect(url_for("main.index"))
 
     compra_pendiente = session.get("compra_pendiente")
     if not compra_pendiente:
@@ -168,6 +176,10 @@ def confirmar_compra_desde_vista():
     if not session.get("backend_session"):
         flash("Iniciá sesión para continuar con la compra.", "warning")
         return redirect(url_for("auth.vista_login"))
+
+    if session.get("rol") != "CLIENTE":
+        flash("Solo los clientes pueden realizar compras.", "danger")
+        return redirect(url_for("main.index"))
 
     compra_pendiente = session.get("compra_pendiente")
     if not compra_pendiente:
@@ -538,6 +550,7 @@ def guardar_seleccion_butacas(id_funcion):
     except Exception:
         asientos_etiquetas = [str(aid) for aid in sorted(asientos_ids)]
 
+    session.pop("servicios_seleccionados", None)
     session["compra_actual"] = {
         "id_funcion": id_funcion,
         "asientos_ids": sorted(asientos_ids),
