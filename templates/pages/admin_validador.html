@@ -61,43 +61,47 @@
     </div>
 
     <!-- Panel de resumen del QR escaneado -->
-    <div id="qr-resumen" class="qr-resumen">
+    <div id="qr-resumen" class="qr-resumen{% if qr_consultado %} active{% endif %}">
         <h3>Información del QR</h3>
         <div class="qr-resumen-grid">
             <div class="qr-resumen-item">
                 <label>Película</label>
-                <span id="resumen-pelicula">—</span>
+                <span id="resumen-pelicula">{{ qr_consultado.get('pelicula_titulo') or '—' if qr_consultado else '—' }}</span>
             </div>
             <div class="qr-resumen-item">
                 <label>Sala</label>
-                <span id="resumen-sala">—</span>
+                <span id="resumen-sala">{{ qr_consultado.get('sala_nombre') or '—' if qr_consultado else '—' }}</span>
             </div>
             <div class="qr-resumen-item">
                 <label>Fecha y hora</label>
-                <span id="resumen-hora">—</span>
+                <span id="resumen-hora">{% if qr_consultado and qr_consultado.get('fecha_hora') %}{{ qr_consultado.get('fecha_hora')|datetimeformat }}{% else %}—{% endif %}</span>
             </div>
             <div class="qr-resumen-item">
                 <label>Estado</label>
-                <span id="resumen-estado">—</span>
+                <span id="resumen-estado">{{ qr_consultado.get('estado_qr') or '—' if qr_consultado else '—' }}</span>
             </div>
             <div class="qr-resumen-item full-width">
                 <label>Butacas</label>
-                <span id="resumen-butacas">—</span>
+                <span id="resumen-butacas">{% if qr_consultado and qr_consultado.get('butacas') %}{{ qr_consultado.get('butacas')|join(', ') }}{% else %}—{% endif %}</span>
             </div>
         </div>
     </div>
 
     <!-- Mensaje de error del QR -->
+    {% if error_consulta %}
+    <div id="qr-resumen-error" class="qr-resumen-error active" role="alert">{{ error_consulta }}</div>
+    {% else %}
     <div id="qr-resumen-error" class="qr-resumen-error"></div>
+    {% endif %}
 
     <!-- Rellenar manualmente -->
     <div class="manual-input-accordion">
-        <button type="button" class="accordion-toggle" id="btn-manual">
+        <button type="button" class="accordion-toggle{% if mostrar_manual %} active{% endif %}" id="btn-manual">
             <span class="accordion-title">COMPLETAR MANUALMENTE</span>
             <span class="accordion-icon material-symbols-outlined">expand_more</span>
         </button>
-        <div class="accordion-content" id="accordion-content">
-            <form method="POST" action="/admin/validador" id="form-validador" style="display:flex;flex-direction:column;gap:18px">
+        <div class="accordion-content{% if mostrar_manual %} active{% endif %}" id="accordion-content">
+            <form method="POST" action="{{ url_for('admin.validador_post') }}" id="form-validador" style="display:flex;flex-direction:column;gap:18px">
                 <div>
                     <label for="codigo_qr" class="form-label" style="font-weight:600;display:block;margin-bottom:6px">
                         Código QR
@@ -107,6 +111,7 @@
                         class="form-control"
                         id="codigo_qr"
                         name="codigo_qr"
+                        value="{{ codigo_qr or '' }}"
                         placeholder="Ingresá o escaneá el código QR"
                         autocomplete="off"
                         style="font-size:1.2rem;padding:12px"
@@ -120,17 +125,20 @@
                     <select class="form-select" id="id_funcion" name="id_funcion" required style="font-size:1.1rem;padding:10px">
                         <option value="">-- Seleccioná una función --</option>
                         {% for func in funciones %}
-                        <option value="{{ func.id_funcion }}">
+                        <option value="{{ func.id_funcion }}"{% if func.id_funcion|string == id_funcion_seleccionada|string %} selected{% endif %}>
                             {{ func.titulo_pelicula | default('Película #' ~ func.id_pelicula) }} — {{ func.nombre_sala | default('Sala #' ~ func.id_sala) }} — {{ func.fecha_hora|datetimeformat }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
+                <button type="submit" id="btn-consultar" name="accion" value="consultar" formnovalidate class="btn btn-secondary">
+                    Consultar QR
+                </button>
             </form>
         </div>
     </div>
 
-    <button type="submit" form="form-validador" id="btn-validar" class="btn btn-primary" style="font-size:1.1rem;padding:12px;margin-top:18px;display:none">
+    <button type="submit" form="form-validador" id="btn-validar" name="accion" value="validar" class="btn btn-primary" style="font-size:1.1rem;padding:12px;margin-top:18px;display:none">
         Validar acceso
     </button>
 </div>
@@ -151,13 +159,13 @@
   const statusDiv = document.getElementById('qr-status');
   const codigoInput = document.getElementById('codigo_qr');
   const selectFuncion = document.getElementById('id_funcion');
+  const btnConsultar = document.getElementById('btn-consultar');
 
   let scanning = false;
   let stream = null;
   let animationId = null;
   let lastScanTime = 0;
   const SCAN_INTERVAL = 100;
-  let isConsulting = false;
 
   function showStatus(message, type) {
     statusDiv.style.display = 'block';
@@ -230,15 +238,8 @@
           oscillator.stop(audioCtx.currentTime + 0.1);
         } catch(e) {}
 
-        // Limpiar resultados anteriores antes de consultar
-        hideResumenError();
-        document.getElementById('qr-resumen').classList.remove('active');
-
-        // Limpiar mensajes de validación del servidor ("Acceso Permitido"/"Denegado")
-        document.querySelectorAll('.notice').forEach(function(n) { n.remove(); });
-
-        // Consultar la función asociada al QR
-        consultarQr(code.data);
+        // Consultar mediante el envío estándar del formulario
+        btnConsultar.click();
 
         return;
       }
@@ -254,7 +255,7 @@
     }
 
     // Limpiar resultados anteriores antes de iniciar escaneo
-    hideResumenError();
+    document.getElementById('qr-resumen-error').classList.remove('active');
     document.getElementById('qr-resumen').classList.remove('active');
 
     // Limpiar mensajes de validación del servidor ("Acceso Permitido"/"Denegado")
@@ -294,85 +295,10 @@
   // Event listener para el botón
   btnCamara.addEventListener('click', startCamera);
 
-  function showResumenError(message) {
-    const errorDiv = document.getElementById('qr-resumen-error');
-    errorDiv.textContent = message;
-    errorDiv.classList.add('active');
-    document.getElementById('qr-resumen').classList.remove('active');
-  }
-
-  function hideResumenError() {
-    document.getElementById('qr-resumen-error').classList.remove('active');
-  }
-
-  function formatFechaHora(fechaHora) {
-    try {
-      const d = new Date(fechaHora.replace(' ', 'T'));
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = d.getFullYear();
-      const hours = String(d.getHours()).padStart(2, '0');
-      const minutes = String(d.getMinutes()).padStart(2, '0');
-      return `${day}/${month}/${year} ${hours}:${minutes}`;
-    } catch(e) {
-      return fechaHora;
-    }
-  }
-
-  async function consultarQr(codigo) {
-    // Evitar consultas duplicadas (ej: escáner + debounce)
-    if (isConsulting) return;
-    isConsulting = true;
-
-    const resumenDiv = document.getElementById('qr-resumen');
-    try {
-      const resp = await fetch('/admin/consultar-qr/' + encodeURIComponent(codigo));
-      const json = await resp.json();
-
-      if (resp.ok && json.status === 'success') {
-        const data = json.data;
-
-        // Autoseleccionar la función en el dropdown
-        if (data.id_funcion) {
-          selectFuncion.value = data.id_funcion;
-        }
-
-        // Mostrar el panel de resumen
-        document.getElementById('resumen-pelicula').textContent = data.pelicula_titulo || '—';
-        document.getElementById('resumen-sala').textContent = data.sala_nombre || '—';
-        document.getElementById('resumen-hora').textContent = data.fecha_hora ? formatFechaHora(data.fecha_hora) : '—';
-        document.getElementById('resumen-estado').textContent = data.estado_qr || '—';
-        document.getElementById('resumen-butacas').textContent = (data.butacas && data.butacas.length) ? data.butacas.join(', ') : '—';
-        resumenDiv.classList.add('active');
-
-        // Verificar si el formulario está completo y mostrar el botón
-        checkFormCompleteness();
-      } else {
-        const mensaje = json.mensaje || 'No se pudo consultar el código QR.';
-        showResumenError(mensaje);
-      }
-    } catch(err) {
-      showResumenError('Error de conexión al consultar el código QR.');
-      console.error('Error consultando QR:', err);
-    } finally {
-      // Liberar el bloqueo después de un breve delay para que el debounce no dispare otra consulta
-      setTimeout(() => { isConsulting = false; }, 1000);
-    }
-  }
-
-  // También consultar cuando se tipea manualmente el código (debounce)
-  let debounceTimer = null;
+  // Ocultar el resumen anterior al editar el código; la consulta requiere enviar el formulario.
   codigoInput.addEventListener('input', function() {
-    clearTimeout(debounceTimer);
-    const codigo = codigoInput.value.trim();
-    if (codigo.length >= 4) {
-      debounceTimer = setTimeout(function() {
-        consultarQr(codigo);
-      }, 500);
-    } else {
-      hideResumenError();
-      document.getElementById('qr-resumen').classList.remove('active');
-    }
+    document.getElementById('qr-resumen-error').classList.remove('active');
+    document.getElementById('qr-resumen').classList.remove('active');
   });
 
   // Rellenar manualmente
@@ -405,6 +331,7 @@
   codigoInput.addEventListener('input', checkFormCompleteness);
 
   selectFuncion.addEventListener('change', checkFormCompleteness);
+  checkFormCompleteness();
 })();
 </script>
 {% endblock %}

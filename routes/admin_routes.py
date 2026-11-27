@@ -4,7 +4,6 @@ from flask import (
     Blueprint,
     Response,
     flash,
-    jsonify,
     redirect,
     render_template,
     request,
@@ -279,18 +278,54 @@ def validador():
         mensaje=None,
         datos=None,
         tipo=None,
+        qr_consultado=None,
+        error_consulta=None,
+        codigo_qr="",
+        id_funcion_seleccionada="",
+        mostrar_manual=False,
     )
 
 @admin_bp.route("/validador", methods=["POST"], endpoint="validador_post")
 def validador_post():
-    from flask import current_app
-
     if not es_admin():
         flash("Acceso no autorizado.", "error")
         return redirect(url_for("auth.vista_login"))
 
     codigo_qr = request.form.get("codigo_qr", "").strip()
     id_funcion_raw = request.form.get("id_funcion", "").strip()
+    accion = request.form.get("accion", "validar")
+
+    if accion == "consultar":
+        if codigo_qr:
+            consulta_exitosa, qr_consultado, error_consulta = (
+                servicio_consultar_codigo_qr(codigo_qr)
+            )
+            if not consulta_exitosa:
+                qr_consultado = None
+        else:
+            qr_consultado = None
+            error_consulta = "Ingresá el código QR."
+
+        funciones, _ = consultar_lista("/funciones", "funciones")
+        id_funcion_seleccionada = (
+            qr_consultado.get("id_funcion") if qr_consultado else id_funcion_raw
+        )
+
+        return render_template(
+            "pages/admin_validador.html",
+            section="admin",
+            active="validador",
+            funciones=funciones,
+            resultado=None,
+            mensaje=None,
+            datos=None,
+            tipo=None,
+            qr_consultado=qr_consultado,
+            error_consulta=error_consulta,
+            codigo_qr=codigo_qr,
+            id_funcion_seleccionada=id_funcion_seleccionada or "",
+            mostrar_manual=True,
+        )
 
     if not codigo_qr:
         funciones, _ = consultar_lista("/funciones", "funciones")
@@ -303,6 +338,11 @@ def validador_post():
             mensaje="Ingresá el código QR.",
             datos=None,
             tipo="denegado",
+            qr_consultado=None,
+            error_consulta=None,
+            codigo_qr=codigo_qr,
+            id_funcion_seleccionada=id_funcion_raw,
+            mostrar_manual=True,
         )
 
     if not id_funcion_raw:
@@ -316,6 +356,11 @@ def validador_post():
             mensaje="Seleccioná una función.",
             datos=None,
             tipo="denegado",
+            qr_consultado=None,
+            error_consulta=None,
+            codigo_qr=codigo_qr,
+            id_funcion_seleccionada=id_funcion_raw,
+            mostrar_manual=True,
         )
 
     try:
@@ -331,6 +376,11 @@ def validador_post():
             mensaje="El ID de función debe ser un número válido.",
             datos=None,
             tipo="denegado",
+            qr_consultado=None,
+            error_consulta=None,
+            codigo_qr=codigo_qr,
+            id_funcion_seleccionada=id_funcion_raw,
+            mostrar_manual=True,
         )
 
     exito, mensaje_servicio, datos = servicio_validar_codigo_qr(codigo_qr, id_funcion)
@@ -346,25 +396,12 @@ def validador_post():
         mensaje=mensaje_servicio,
         datos=datos,
         tipo="permitido" if exito else "denegado",
+        qr_consultado=None,
+        error_consulta=None,
+        codigo_qr=codigo_qr,
+        id_funcion_seleccionada=id_funcion_raw,
+        mostrar_manual=True,
     )
-
-
-@admin_bp.route("/consultar-qr/<codigo>", methods=["GET"], endpoint="consultar_qr")
-def consultar_qr(codigo):
-    if not es_admin():
-        return jsonify({"status": "error", "error": "ACCESO_DENEGADO", "mensaje": "Solo administradores"}), 403
-
-    exito, datos, error = servicio_consultar_codigo_qr(codigo)
-    if not exito:
-        if error == "Código QR no encontrado":
-            return jsonify({"status": "error", "error": "QR_NO_ENCONTRADO", "mensaje": error}), 404
-        if error == "Sesión expirada o sin permisos":
-            return jsonify({"status": "error", "error": "SESION_EXPIRADA", "mensaje": error}), 401
-        if error == "No se pudo conectar con el servidor":
-            return jsonify({"status": "error", "error": "BACKEND_NO_DISPONIBLE", "mensaje": error}), 503
-        return jsonify({"status": "error", "error": "ERROR", "mensaje": error}), 500
-
-    return jsonify({"status": "success", "data": datos}), 200
 
 
 @admin_bp.route("/salas", methods=["POST"], endpoint="crear_sala")
