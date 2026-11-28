@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% set section = 'admin' %}
+{% set active = 'servicios' %}
+
+{% block title %}ABM de Servicios | Backoffice Cine Paradiso{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_peliculas.css') }}">
+{% endblock %}
+
+{% set tipos = ['COMIDA', 'BEBIDA', 'COMBO', 'ESTACIONAMIENTO', 'VIP', 'OTRO'] %}
+
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Gestión de Backoffice</span>
+        <h1>ABM de Servicios</h1>
+        <p>Alta, modificación y baja de los servicios que los clientes pueden agregar a su compra.</p>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="notice {% if category == 'success' %}success{% endif %}" role="status" style="margin-bottom:18px">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<section class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h2>Nuevo servicio</h2>
+    </div>
+
+    <form action="{{ url_for('admin.crear_servicio') }}" method="post" class="stack">
+        <div class="field">
+            <label for="nuevo-nombre">Nombre</label>
+            <input class="input" id="nuevo-nombre" name="nombre" maxlength="100" placeholder="Ej.: Combo pochoclo grande" required>
+        </div>
+
+        <div class="field">
+            <label for="nuevo-descripcion">Descripción (opcional)</label>
+            <input class="input" id="nuevo-descripcion" name="descripcion" maxlength="255" placeholder="Ej.: Pochoclo grande + gaseosa 500 ml">
+        </div>
+
+        <div class="field">
+            <label for="nuevo-tipo">Tipo</label>
+            <select class="select" id="nuevo-tipo" name="tipo" required>
+                <option value="">Seleccionar tipo</option>
+                {% for tipo in tipos %}
+                    <option value="{{ tipo }}">{{ tipo|capitalize }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="nuevo-precio">Precio ($)</label>
+            <input class="input" id="nuevo-precio" type="number" name="precio" min="0" step="0.01" placeholder="Ej.: 8500" required>
+        </div>
+
+        <button class="btn btn-primary btn-full" type="submit">
+            <span class="material-symbols-outlined">add_box</span>
+            Crear servicio
+        </button>
+    </form>
+</section>
+
+<section class="card">
+    <div class="card-header">
+        <h2>Servicios cargados</h2>
+        <span class="badge badge-outline">{{ servicios|default([])|length }} registros</span>
+    </div>
+
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Tipo</th>
+                    <th>Precio ($)</th>
+                    <th style="text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in servicios|default([]) %}
+                    <tr>
+                        <td><strong>#{{ s.id_servicio }}</strong></td>
+                        <td><input class="input" name="nombre" value="{{ s.nombre }}" maxlength="100" required form="editar-{{ s.id_servicio }}" style="min-width: 150px;"></td>
+                        <td><input class="input" name="descripcion" value="{{ s.descripcion or '' }}" maxlength="255" form="editar-{{ s.id_servicio }}" style="min-width: 165px;"></td>
+                        <td>
+                            <select class="select" name="tipo" required form="editar-{{ s.id_servicio }}" style="min-width: 180px;">
+                                {% for tipo in tipos %}
+                                    <option value="{{ tipo }}" {% if tipo == s.tipo %}selected{% endif %}>{{ tipo|capitalize }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td><input class="input" type="number" name="precio" value="{{ '%.2f'|format(s.precio) }}" min="0" step="0.01" required form="editar-{{ s.id_servicio }}" style="min-width: 120px;"></td>
+                        <td style="text-align: center; white-space: nowrap;">
+                            <form id="editar-{{ s.id_servicio }}" action="{{ url_for('admin.editar_servicio', id_servicio=s.id_servicio) }}" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-secondary btn-small" title="Guardar cambios">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+                                </button>
+                            </form>
+                            <form action="{{ url_for('admin.eliminar_servicio', id_servicio=s.id_servicio) }}"
+                                  method="post"
+                                  style="display: inline;"
+                                  onsubmit="return confirm('¿Confirmás que querés eliminar este servicio?');">
+                                <button type="submit" class="btn-delete-action" title="Eliminar servicio">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-state">No hay servicios registrados.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}
