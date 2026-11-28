@@ -206,6 +206,54 @@ def obtener_servicios():
     return servicios_list
 
 
+def _error_servicio(respuesta, defecto):
+    if respuesta.status_code in (401, 403):
+        return "Sesión expirada o sin permisos. Iniciá sesión nuevamente."
+    return _extraer_error(respuesta, defecto)
+
+
+def crear_servicio(payload):
+    try:
+        respuesta = requests.post(
+            f"{_backend_url()}/servicios", json=payload, headers=_get_auth_headers(), cookies=_get_backend_cookies(), timeout=10, )
+
+        if respuesta.status_code == 201:
+            return True, f"Servicio '{payload.get('nombre')}' creado correctamente."
+
+        return False, _error_servicio(respuesta, "No se pudo crear el servicio.")
+
+    except requests.RequestException:
+        return False, "No se pudo contactar con el backend para crear el servicio."
+
+
+def actualizar_servicio(id_servicio, payload):
+    try:
+        respuesta = requests.patch(
+            f"{_backend_url()}/servicios/{id_servicio}", json=payload, headers=_get_auth_headers(), cookies=_get_backend_cookies(), timeout=10, )
+
+        if respuesta.status_code == 200:
+            return True, "Servicio modificado correctamente."
+
+        return False, _error_servicio(respuesta, "No se pudo modificar el servicio.")
+
+    except requests.RequestException:
+        return False, "No se pudo contactar con el backend para modificar el servicio."
+
+
+def eliminar_servicio(id_servicio):
+    try:
+        respuesta = requests.delete(
+            f"{_backend_url()}/servicios/{id_servicio}", headers=_get_auth_headers(), cookies=_get_backend_cookies(), timeout=10, )
+
+        if respuesta.status_code in (200, 204):
+            return True, "Servicio eliminado correctamente."
+
+        return False, _error_servicio(respuesta, "No fue posible eliminar el servicio.")
+
+    except requests.RequestException:
+        return False, "No se pudo contactar con el backend para eliminar el servicio."
+
+
 def validar_codigo_qr(codigo_qr, id_funcion):
     try:
         url = f"{_backend_url()}/codigos-qr/{codigo_qr}"

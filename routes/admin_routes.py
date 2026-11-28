@@ -19,6 +19,9 @@ from services.admin_service import (
     eliminar_funcion as servicio_eliminar_funcion,
     eliminar_sala as servicio_eliminar_sala,
     importar_pelicula as servicio_importar_pelicula,
+    crear_servicio as servicio_crear_servicio,
+    actualizar_servicio as servicio_actualizar_servicio,
+    eliminar_servicio as servicio_eliminar_servicio,
     obtener_datos_backoffice_peliculas,
     obtener_servicios,
     validar_codigo_qr as servicio_validar_codigo_qr, consultar_lista,
@@ -255,6 +258,100 @@ def servicios():
         active="servicios",
         servicios=servicios_list,
     )
+
+
+TIPOS_SERVICIO = ("COMIDA", "BEBIDA", "COMBO", "ESTACIONAMIENTO", "VIP", "OTRO")
+
+
+def _validar_acceso_servicios():
+    if not es_admin():
+        flash("Acceso no autorizado.", "error")
+        return redirect(url_for("auth.vista_login"))
+
+    if not session.get("backend_session"):
+        flash("Falta la sesión del backend. Iniciá sesión nuevamente.", "error")
+        return redirect(url_for("admin.servicios"))
+
+    return None
+
+
+def _leer_formulario_servicio():
+    """Devuelve (payload, error). El backend valida de nuevo, esto solo evita viajes de más."""
+    nombre = request.form.get("nombre", "").strip()
+    descripcion = request.form.get("descripcion", "").strip()
+    tipo = request.form.get("tipo", "").strip()
+
+    if not nombre:
+        return None, "El nombre es obligatorio."
+
+    if tipo not in TIPOS_SERVICIO:
+        return None, "Elegí un tipo de servicio válido."
+
+    try:
+        precio = float(request.form.get("precio", "").replace(",", "."))
+    except ValueError:
+        return None, "El precio debe ser un número."
+
+    if precio < 0:
+        return None, "El precio no puede ser negativo."
+
+    return {
+        "nombre": nombre,
+        "descripcion": descripcion,
+        "tipo": tipo,
+        "precio": precio,
+    }, None
+
+
+@admin_bp.route("/servicios", methods=["POST"], endpoint="crear_servicio")
+def crear_servicio():
+    bloqueo = _validar_acceso_servicios()
+    if bloqueo:
+        return bloqueo
+
+    payload, error = _leer_formulario_servicio()
+    if error:
+        flash(error, "error")
+        return redirect(url_for("admin.servicios"))
+
+    exito, mensaje = servicio_crear_servicio(payload)
+    flash(mensaje, "success" if exito else "error")
+    return redirect(url_for("admin.servicios"))
+
+
+@admin_bp.route(
+    "/servicios/<int:id_servicio>/edicion",
+    methods=["POST"],
+    endpoint="editar_servicio",
+)
+def editar_servicio(id_servicio):
+    bloqueo = _validar_acceso_servicios()
+    if bloqueo:
+        return bloqueo
+
+    payload, error = _leer_formulario_servicio()
+    if error:
+        flash(error, "error")
+        return redirect(url_for("admin.servicios"))
+
+    exito, mensaje = servicio_actualizar_servicio(id_servicio, payload)
+    flash(mensaje, "success" if exito else "error")
+    return redirect(url_for("admin.servicios"))
+
+
+@admin_bp.route(
+    "/servicios/<int:id_servicio>/baja",
+    methods=["POST"],
+    endpoint="eliminar_servicio",
+)
+def eliminar_servicio(id_servicio):
+    bloqueo = _validar_acceso_servicios()
+    if bloqueo:
+        return bloqueo
+
+    exito, mensaje = servicio_eliminar_servicio(id_servicio)
+    flash(mensaje, "success" if exito else "error")
+    return redirect(url_for("admin.servicios"))
 
 
 @admin_bp.route("/validador", methods=["GET"], endpoint="validador")
